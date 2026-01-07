@@ -8,67 +8,64 @@
 </head>
 
 <body>
-  <div class="container">
-
-    <!-- HEADER -->
-    <header class="topbar">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="headerInner">
       <div class="brand">
-        <!-- 로고 이미지: app.js의 UI_ASSETS.logo로도 바꿀 수 있지만,
-             HTML에서 직접 src를 두고 싶으면 여기 변경해도 됨 -->
-        <img id="logoImg" class="logoImg" alt="Dungeon Simulator" />
+        <!-- 로고 크게 -->
+        <img class="brandLogo" src="./assets/logo.png" alt="Dungeon Simulator" />
       </div>
 
-      <div class="topbarBtns">
-        <button class="ghost" id="saveBtn" type="button">세이브</button>
-        <button class="ghost" id="loadBtn" type="button">로드</button>
-        <button class="ghost" id="wipeSaveBtn" type="button">세이브 삭제</button>
+      <div class="headerBtns">
+        <button class="ghost" id="saveBtn">세이브</button>
+        <button class="ghost" id="loadBtn">로드</button>
+        <button class="ghost" id="wipeSaveBtn">세이브 삭제</button>
       </div>
-    </header>
+    </div>
+  </header>
 
+  <main class="container">
     <!-- SETUP -->
-    <section class="setupCard card" id="setupCard">
-      <!-- (1) Intro parchment -->
-      <div class="introBox" id="introBox">
-        <div class="introText" id="introText">
+    <section class="card" id="setupCard">
+      <!-- 1) Intro parchment -->
+      <section class="introParchment" aria-label="인트로">
+        <div class="introText">
           던전, 그 기묘한 공간에는<br/>
           부와 명성이 존재한다.
         </div>
-      </div>
+      </section>
 
-      <!-- (2) Party slots + (3) Enter -->
-      <div class="setupBottom">
+      <!-- 2) Party area -->
+      <section class="setupRow">
         <div class="partyPanel">
-          <div class="partyHeader">
+          <div class="partyPanelHead">
             <div>
-              <h2 class="sectionTitle">파티 창</h2>
+              <h2 class="panelTitle">파티 창</h2>
               <div class="muted small">최대 4명 · 빈 슬롯은 “+ 파티원 추가”</div>
             </div>
-            <button class="ghost" id="clearPartyBtn" type="button">파티 초기화</button>
+            <button class="ghost" id="clearPartyBtn">파티 초기화</button>
           </div>
 
-          <div class="partyGrid" id="partySlots"></div>
+          <!-- 파티 슬롯 4칸: app.js에서 채워주는 영역 -->
+          <div class="partySlots" id="partyPreview"></div>
         </div>
+      </section>
 
-        <div class="enterPanel">
-          <button class="enterBtn" id="startBtn" type="button">
-            던전 진입
-          </button>
-          <div class="muted small" style="margin-top:10px; text-align:center;">
-            데이터 수정은 <code>/data/*.json</code>에서!
-          </div>
-        </div>
+      <!-- 4) 던전 진입 버튼: 하단 단독 -->
+      <div class="setupBottom">
+        <button class="primary enterBtn" id="startBtn">던전 진입</button>
       </div>
     </section>
 
-    <!-- RUN (기존 구조 유지) -->
+    <!-- RUN -->
     <section class="card hidden" id="runCard">
-      <div class="rowBetween">
+      <div class="topline">
         <div>
           <h2 id="scenarioTitle"></h2>
           <p class="muted" id="scenarioDesc"></p>
         </div>
         <div style="display:flex; gap:10px;">
-          <button id="resetBtn" class="ghost" type="button">리셋</button>
+          <button id="resetBtn" class="ghost">리셋</button>
         </div>
       </div>
 
@@ -134,80 +131,84 @@
         </div>
       </div>
     </section>
-  </div>
+  </main>
 
-  <!-- 캐릭터 설정 MODAL (새로 추가) -->
-  <div class="modal hidden" id="charModal" aria-hidden="true">
-    <div class="modalPanel">
-      <div class="modalHeader">
+  <!-- ✅ 캐릭터 설정 팝업(네 app.js가 쓰는 id 유지) -->
+  <div class="modal hidden" id="setupModal">
+    <div class="modalCard modalWide">
+      <div class="rowBetween">
         <div>
-          <div class="modalTitle">캐릭터 설정</div>
-          <div class="modalDesc">이름 · 계열 · 직업 · 성격 키워드 3개</div>
+          <h3>캐릭터 설정</h3>
+          <div class="muted small">이름 · 직업 · 성격 키워드 3개</div>
         </div>
-        <button class="ghost" id="charModalClose" type="button">닫기</button>
+        <button class="ghost" id="setupCloseBtn">닫기</button>
       </div>
 
       <div class="modalForm">
-        <div class="grid2">
-          <label>
-            이름
-            <input id="charName" placeholder="예: 아르덴" maxlength="16" />
-          </label>
-
-          <label>
-            계열
-            <select id="charCategory"></select>
-          </label>
-
-          <label>
-            직업
-            <select id="charJob"></select>
-          </label>
+        <!-- 5) 팝업 내 배치: 1줄 이름 / 2줄 직업 / 3줄 성격 -->
+        <div class="modalSection">
+          <div class="modalLabel">이름</div>
+          <input id="nameInput" placeholder="예: 아르덴" maxlength="16" />
         </div>
 
-        <div style="margin-top:10px;">
-          <div class="rowBetween">
-            <h3 style="margin:0;">성격 키워드 3개</h3>
-            <span class="muted small">중복 선택 불가 (자동 갱신)</span>
+        <div class="modalSection">
+          <div class="modalLabel">직업</div>
+          <div class="modalRow2">
+            <label class="field">
+              <span class="muted small">계열</span>
+              <select id="categorySelect"></select>
+            </label>
+            <label class="field">
+              <span class="muted small">직업</span>
+              <select id="jobSelect"></select>
+            </label>
           </div>
+        </div>
 
-          <div class="grid3" style="margin-top:8px;">
-            <label>
-              키워드 1
-              <select id="charTrait1"></select>
+        <div class="modalSection">
+          <div class="rowBetween">
+            <div class="modalLabel">성격 키워드 3개</div>
+            <div class="muted small">중복 선택 불가(자동 갱신)</div>
+          </div>
+          <div class="modalRow3">
+            <label class="field">
+              <span class="muted small">키워드 1</span>
+              <select id="traitSel1"></select>
             </label>
-            <label>
-              키워드 2
-              <select id="charTrait2"></select>
+            <label class="field">
+              <span class="muted small">키워드 2</span>
+              <select id="traitSel2"></select>
             </label>
-            <label>
-              키워드 3
-              <select id="charTrait3"></select>
+            <label class="field">
+              <span class="muted small">키워드 3</span>
+              <select id="traitSel3"></select>
             </label>
           </div>
         </div>
 
         <div class="modalActions">
-          <button class="ghost" id="charCancel" type="button">취소</button>
-          <button class="primary" id="charConfirm" type="button">확인</button>
+          <button class="ghost" id="setupCancelBtn">취소</button>
+          <button class="primary" id="addMemberBtn">확인</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 기존 대상선택 MODAL (아이템/스킬) -->
-  <div class="modal hidden" id="modal" aria-hidden="true">
-    <div class="modalPanel">
-      <div class="modalHeader">
-        <div>
-          <div class="modalTitle" id="modalTitle">대상 선택</div>
-          <div class="modalDesc" id="modalDesc"></div>
-        </div>
-        <button class="ghost" id="modalClose" type="button">닫기</button>
+  <!-- 기존 전투/아이템 대상선택 모달 유지 -->
+  <div class="modal hidden" id="modal">
+    <div class="modalCard">
+      <div class="rowBetween">
+        <h3 id="modalTitle">대상 선택</h3>
+        <button class="ghost" id="modalClose">닫기</button>
       </div>
-      <div id="modalBody" style="margin-top:10px;"></div>
+      <p class="muted" id="modalDesc"></p>
+      <div id="modalBody" class="modalBody"></div>
     </div>
   </div>
+
+  <footer class="footer">
+    <span class="muted">Warm UI · Party · Save/Load · Combat · Items · Skills · Status Effects</span>
+  </footer>
 
   <script src="app.js"></script>
 </body>
