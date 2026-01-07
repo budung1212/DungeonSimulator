@@ -1,54 +1,122 @@
 {
   "definitions": {
-    "guard": {
-      "id": "guard",
-      "name": "방어",
+    "guardian": {
+      "id": "guardian",
+      "name": "수호",
       "type": "active",
-      "description": "대상에게 다음 피해 -1 보호를 부여한다."
+      "description": "대상에게 받는 피해를 절반으로 줄이는 보호(1회) 부여.",
+      "target": "ally",
+      "mpCost": 1,
+      "applyTemp": { "damageHalf": 1 }
+    },
+    "smash": {
+      "id": "smash",
+      "name": "강타",
+      "type": "active",
+      "description": "공격력 1.5배의 강타를 가한다.",
+      "target": "enemy",
+      "mpCost": 1,
+      "damage": { "kind": "physical", "stat": "atk", "mult": 1.5 }
+    },
+    "paladin_heal": {
+      "id": "paladin_heal",
+      "name": "성기사의 치유",
+      "type": "active",
+      "description": "아군 HP 2 회복. (포션중독 상태여도 가능)",
+      "target": "ally",
+      "mpCost": 1,
+      "heal": { "value": 2 }
     },
     "fireball": {
       "id": "fireball",
       "name": "파이어볼",
       "type": "active",
-      "description": "시전자는 다음 마법 판정에 +2 보너스를 얻는다."
+      "description": "대상에게 mag*3 피해.",
+      "target": "enemy",
+      "mpCost": 1,
+      "damage": { "kind": "magic", "stat": "mag", "mult": 3 }
     },
-    "heal": {
-      "id": "heal",
-      "name": "치유",
+    "spirit_heal": {
+      "id": "spirit_heal",
+      "name": "정령의 치유",
       "type": "active",
-      "description": "대상의 HP를 4 회복한다. (포션중독 상태여도 가능)"
+      "description": "대상 HP 4 회복. (포션중독 상태여도 가능)",
+      "target": "ally",
+      "mpCost": 1,
+      "heal": { "value": 4 }
+    },
+    "thunder_strike": {
+      "id": "thunder_strike",
+      "name": "뇌격",
+      "type": "active",
+      "description": "적 전체에게 mag*2 피해.",
+      "target": "all_enemies",
+      "mpCost": 1,
+      "damage": { "kind": "magic", "stat": "mag", "mult": 2 }
+    },
+    "divine_hand": {
+      "id": "divine_hand",
+      "name": "신의 손길",
+      "type": "active",
+      "description": "아군 전원 HP 3 회복. (포션중독 상태여도 가능)",
+      "target": "all_allies",
+      "mpCost": 1,
+      "heal": { "value": 3 }
     },
     "purify": {
       "id": "purify",
       "name": "정화",
       "type": "active",
-      "description": "대상의 상태이상 '포션중독'을 제거한다."
+      "description": "대상 '포션중독' 제거.",
+      "target": "ally",
+      "mpCost": 1,
+      "removeStatus": ["potion_addiction"]
+    },
+    "chord": {
+      "id": "chord",
+      "name": "화음",
+      "type": "active",
+      "description": "luck 수치만큼 파티 호감도(모든 페어) 상승.",
+      "target": "party",
+      "mpCost": 1,
+      "affinityAllPairs": { "byCasterLuck": true }
     },
 
-    "steel_mind": {
-      "id": "steel_mind",
-      "name": "강철의 정신",
+    "ignore_status": {
+      "id": "ignore_status",
+      "name": "투사의 정신",
       "type": "passive",
-      "description": "침착/퍼즐 계열 이벤트에서 ATK 판정 +1.",
-      "condition": { "eventTagsAny": ["침착", "퍼즐"] },
-      "bonus": { "atk": 1 }
+      "description": "모든 상태이상을 무시한다."
     },
-    "arcane_knowledge": {
-      "id": "arcane_knowledge",
-      "name": "비전 지식",
+    "stealth": {
+      "id": "stealth",
+      "name": "은신술",
       "type": "passive",
-      "description": "마법/룬 이벤트에서 MAG 판정 +1.",
-      "condition": { "eventTagsAny": ["마법", "룬", "퍼즐"] },
-      "bonus": { "mag": 1 }
+      "description": "luck% 확률로 전투 이벤트를 회피할 수 있다."
+    },
+    "puzzle_master": {
+      "id": "puzzle_master",
+      "name": "전문퍼즐",
+      "type": "passive",
+      "description": "퍼즐 태그 이벤트 판정에서 luck만큼 추가 보정.",
+      "condition": { "eventTagsAny": ["퍼즐","룬","장치"] },
+      "bonus": { "checkAddLuck": true }
     }
   },
 
   "jobSkillMap": {
-    "knight":     { "active": ["guard"],    "passive": ["steel_mind"] },
-    "berserker":  { "active": ["guard"],    "passive": [] },
-    "wizard":     { "active": ["fireball"], "passive": ["arcane_knowledge"] },
-    "cleric":     { "active": ["heal", "purify"], "passive": [] },
-    "assassin":   { "active": [], "passive": [] },
-    "bard":       { "active": [], "passive": [] }
+    "shield_knight":     { "active": ["guardian"], "passive": [] },
+    "axe_thrower":       { "active": [], "passive": ["ignore_status"] },
+    "greatsword_warrior":{ "active": ["smash"], "passive": [] },
+    "mace_paladin":      { "active": ["paladin_heal"], "passive": [] },
+
+    "pyromancer":        { "active": ["fireball"], "passive": [] },
+    "elementalist":      { "active": ["spirit_heal"], "passive": [] },
+    "stormcaller":       { "active": ["thunder_strike"], "passive": [] },
+    "priest":            { "active": ["divine_hand","purify"], "passive": [] },
+
+    "hermit":            { "active": [], "passive": ["stealth"] },
+    "bard":              { "active": ["chord"], "passive": [] },
+    "dungeon_expert":    { "active": [], "passive": ["puzzle_master"] }
   }
 }
