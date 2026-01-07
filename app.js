@@ -1,93 +1,60 @@
 // app.js
 const $ = (sel) => document.querySelector(sel);
 
+const SAVE_KEY = "dungeon_party_sim_save_v1";
+
 const state = {
-  data: {
-    jobs: null,
-    scenarios: null,
-    traits: null,
-    items: null,
-    statuses: null,
-    skills: null
-  },
-  party: [],         // 최대 4
+  data: { jobs:null, scenarios:null, traits:null, items:null, statuses:null, skills:null },
+  party: [],              // members
+  pairAffinity: {},       // key "idA|idB" => number
   scenario: null,
   eventIndex: 0,
-  inventory: [],     // { itemId, qty }
-  activeModal: null  // { type: "item"|"skill", id }
+  inventory: [],          // { itemId, qty }
+  gold: 0,
+  activeModal: null,      // { type:"item"|"skill", id, casterIndex, enemyIndex? }
+  combat: null            // { monsters:[], inCombat:boolean }
 };
 
+// ---------- Utils ----------
 async function loadJSON(path){
   const res = await fetch(path);
   if(!res.ok) throw new Error(`Failed to load ${path}`);
   return await res.json();
 }
-
-function escapeHTML(s){
+function esc(s){
   return String(s).replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[m]));
 }
-
-function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-
-function nowLogPrefix(){ return ""; }
-
-function appendLog(text){
+function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+function rndInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function uuid(){
+  return (crypto?.randomUUID?.() ?? `id_${Math.random().toString(16).slice(2)}_${Date.now()}`);
+}
+function logLine(text){
   const el = $("#log");
   const prev = el.innerHTML.trim();
-  const line = `• ${escapeHTML(text)}`;
+  const line = `• ${esc(text)}`;
   el.innerHTML = prev ? `${prev}<br/>${line}` : line;
 }
 
-function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-
+// ---------- Data helpers ----------
 function findJob(catId, jobId){
   const cat = state.data.jobs.categories.find(c => c.id === catId);
-  if(!cat) return null;
-  return cat.jobs.find(j => j.id === jobId) ?? null;
+  return cat?.jobs?.find(j => j.id === jobId) ?? null;
 }
+function getSkillDef(id){ return state.data.skills.definitions[id]; }
+function getItemDef(id){ return state.data.items.definitions[id]; }
+function getStatusDef(id){ return state.data.statuses.definitions[id]; }
 
-function getTraitPool(){
-  return state.data.traits.traitPool ?? [];
-}
-
-function buildJobUI(){
-  const jobsData = state.data.jobs;
-  const catSel = $("#categorySelect");
-  const jobSel = $("#jobSelect");
-
-  catSel.innerHTML = "";
-  for(const c of jobsData.categories){
-    const opt = document.createElement("option");
-    opt.value = c.id;
-    opt.textContent = c.name;
-    catSel.appendChild(opt);
-  }
-
-  function refreshJobs(){
-    const catId = catSel.value;
-    const cat = jobsData.categories.find(x => x.id === catId);
-    jobSel.innerHTML = "";
-    for(const j of cat.jobs){
-      const opt = document.createElement("option");
-      opt.value = j.id;
-      opt.textContent = j.name;
-      jobSel.appendChild(opt);
-    }
-  }
-
-  catSel.onchange = refreshJobs;
-  refreshJobs();
-}
-
-/** ========== Traits dropdown (중복 금지) ========== */
+// ---------- Traits dropdown (unique across 3) ----------
+function getTraitPool(){ return state.data.traits.traitPool ?? []; }
 
 function buildTraitDropdowns(){
   const pool = getTraitPool();
   const sels = [$("#traitSel1"), $("#traitSel2"), $("#traitSel3")];
 
-  // initial options
   for(const sel of sels){
     sel.innerHTML = "";
     const empty = document.createElement("option");
@@ -103,12 +70,11 @@ function buildTraitDropdowns(){
     }
   }
 
-  function refreshAllOptions(){
+  function refresh(){
     const chosen = new Set(sels.map(s => s.value).filter(Boolean));
 
     for(const sel of sels){
       const keep = sel.value;
-      // rebuild with exclusion of others
       sel.innerHTML = "";
       const empty = document.createElement("option");
       empty.value = "";
@@ -116,7 +82,6 @@ function buildTraitDropdowns(){
       sel.appendChild(empty);
 
       for(const t of pool){
-        // 다른 칸에서 선택된 값은 제거, 단 자기 자신이 이미 선택한 값은 유지
         const selectedElsewhere = chosen.has(t) && keep !== t;
         if(selectedElsewhere) continue;
         const opt = document.createElement("option");
@@ -128,22 +93,70 @@ function buildTraitDropdowns(){
     }
   }
 
-  for(const sel of sels){
-    sel.addEventListener("change", refreshAllOptions);
-  }
-
-  refreshAllOptions();
+  sels.forEach(s => s.addEventListener("change", refresh));
+  refresh();
 }
-
 function getSelectedTraits(){
-  const t = [$("#traitSel1").value, $("#traitSel2").value, $("#traitSel3").value]
+  const arr = [$("#traitSel1").value, $("#traitSel2").value, $("#traitSel3").value]
     .map(x => (x||"").trim())
     .filter(Boolean);
-  // 중복 방지(안전)
-  return [...new Set(t)].slice(0,3);
+  return [...new Set(arr)].slice(0,3);
 }
 
-/** ========== Party creation ========== */
+// ---------- Jobs UI ----------
+function buildJobUI(){
+  const jobs = state.data.jobs;
+  const catSel = $("#categorySelect");
+  const jobSel = $("#jobSelect");
+
+  catSel.innerHTML = "";
+  for(const c of jobs.categories){
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = c.name;
+    catSel.appendChild(opt);
+  }
+
+  function refreshJobs(){
+    const cat = jobs.categories.find(x => x.id === catSel.value);
+    jobSel.innerHTML = "";
+    for(const j of cat.jobs){
+      const opt = document.createElement("option");
+      opt.value = j.id;
+      opt.textContent = j.name;
+      jobSel.appendChild(opt);
+    }
+  }
+
+  catSel.onchange = refreshJobs;
+  refreshJobs();
+}
+
+// ---------- Party / Affinity ----------
+function pairKey(aId,bId){
+  return (aId < bId) ? `${aId}|${bId}` : `${bId}|${aId}`;
+}
+function getPairAffinity(aId,bId){
+  return state.pairAffinity[pairKey(aId,bId)] ?? 0;
+}
+function addPairAffinity(aId,bId,delta){
+  const k = pairKey(aId,bId);
+  state.pairAffinity[k] = (state.pairAffinity[k] ?? 0) + delta;
+}
+function initPairAffinities(){
+  state.pairAffinity = {};
+  for(let i=0;i<state.party.length;i++){
+    for(let j=i+1;j<state.party.length;j++){
+      state.pairAffinity[pairKey(state.party[i].id, state.party[j].id)] = 0;
+    }
+  }
+}
+function avgAffinityFor(memberId){
+  const others = state.party.filter(m => m.id !== memberId);
+  if(others.length === 0) return 0;
+  const sum = others.reduce((a,m)=>a + getPairAffinity(memberId,m.id), 0);
+  return Math.round(sum / others.length);
+}
 
 function renderPartyPreview(){
   const wrap = $("#partyPreview");
@@ -151,7 +164,6 @@ function renderPartyPreview(){
     wrap.innerHTML = `<div class="muted small">아직 파티원이 없습니다. 아래에서 추가하세요.</div>`;
     return;
   }
-
   wrap.innerHTML = "";
   state.party.forEach((m, idx) => {
     const div = document.createElement("div");
@@ -159,12 +171,12 @@ function renderPartyPreview(){
     div.innerHTML = `
       <div class="titleRow">
         <div>
-          <div style="font-weight:800;">${escapeHTML(m.name)} <span class="muted small">/ ${escapeHTML(m.jobName)}</span></div>
-          <div class="muted small">성격: ${escapeHTML(m.traits.join(", ") || "없음")}</div>
+          <div style="font-weight:800;">${esc(m.name)} <span class="muted small">/ ${esc(m.jobName)}</span></div>
+          <div class="muted small">성격: ${esc(m.traits.join(", ") || "없음")}</div>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span class="badge">HP <b>${m.hp}</b></span>
-          <span class="badge">호감도 <b>${m.affinity}</b></span>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+          <span class="badge">HP <b>${m.hp}</b>/${m.maxHp}</span>
+          <span class="badge">MP <b>${m.mp}</b>/${m.maxMp}</span>
           <button class="ghost" data-edit="${idx}">수정</button>
           <button class="ghost" data-del="${idx}">삭제</button>
         </div>
@@ -176,16 +188,20 @@ function renderPartyPreview(){
   wrap.querySelectorAll("[data-del]").forEach(btn => {
     btn.onclick = () => {
       const i = Number(btn.dataset.del);
+      const removed = state.party[i];
       state.party.splice(i,1);
+
+      // affinity map rebuild (simple)
+      initPairAffinities();
       renderPartyPreview();
+      resetMemberForm();
+
+      logLine(`파티원 제거: ${removed?.name ?? ""}`);
     };
   });
 
   wrap.querySelectorAll("[data-edit]").forEach(btn => {
-    btn.onclick = () => {
-      const i = Number(btn.dataset.edit);
-      loadMemberToForm(i);
-    };
+    btn.onclick = () => loadMemberToForm(Number(btn.dataset.edit));
   });
 }
 
@@ -193,18 +209,14 @@ function loadMemberToForm(index){
   const m = state.party[index];
   $("#nameInput").value = m.name;
   $("#categorySelect").value = m.categoryId;
-  // refresh job list first
   $("#categorySelect").dispatchEvent(new Event("change"));
   $("#jobSelect").value = m.jobId;
 
-  // traits
   $("#traitSel1").value = m.traits[0] ?? "";
   $("#traitSel2").value = m.traits[1] ?? "";
   $("#traitSel3").value = m.traits[2] ?? "";
-  // trigger refresh
   $("#traitSel1").dispatchEvent(new Event("change"));
 
-  // store edit index on button
   $("#addMemberBtn").dataset.editing = String(index);
   $("#addMemberBtn").textContent = "파티원 수정 저장";
 }
@@ -224,27 +236,28 @@ function createMemberFromForm(){
   const categoryId = $("#categorySelect").value;
   const jobId = $("#jobSelect").value;
   const job = findJob(categoryId, jobId);
-
   if(!job) throw new Error("직업 정보를 찾을 수 없습니다.");
 
   const traits = getSelectedTraits();
-
-  // skills: 직업 id 기반으로 초기 스킬 매핑
   const skillPack = state.data.skills.jobSkillMap?.[jobId] ?? { active: [], passive: [] };
 
+  const maxHp = job.base.hp ?? 10;
+  const maxMp = job.base.mp ?? 5;
+
   return {
-    id: crypto.randomUUID(),
+    id: uuid(),
     name,
     categoryId,
     jobId,
     jobName: job.name,
-    stats: { ...job.base },
-    hp: job.base.hp ?? 10,
-    maxHp: job.base.hp ?? 10,
-    gold: 0,
-    affinity: 0,
+    stats: { ...job.base },   // hp/mp/atk/mag/def/luck
+    hp: maxHp,
+    mp: maxMp,
+    maxHp,
+    maxMp,
     traits,
-    statuses: [],     // ["potion_addiction"] 등
+    statuses: [],
+    temp: {},                 // combat temp buffs
     skills: {
       active: [...(skillPack.active ?? [])],
       passive: [...(skillPack.passive ?? [])]
@@ -253,33 +266,63 @@ function createMemberFromForm(){
 }
 
 function addOrUpdateMember(){
-  if(state.party.length >= 4 && !$("#addMemberBtn").dataset.editing){
+  const editing = $("#addMemberBtn").dataset.editing;
+  if(editing === "" && state.party.length >= 4){
     alert("파티는 최대 4명까지입니다.");
     return;
   }
 
-  const editing = $("#addMemberBtn").dataset.editing;
   const member = createMemberFromForm();
 
   if(editing !== ""){
     const idx = Number(editing);
-    // 유지하고 싶은 값(예: 런 중이면 유지해야 하지만 setup 단계니까 그냥 교체)
+    const old = state.party[idx];
     state.party[idx] = member;
+
+    // affinity rebuild (simple)
+    initPairAffinities();
+    logLine(`파티원 수정: ${old?.name ?? ""} → ${member.name}`);
   }else{
     state.party.push(member);
+    initPairAffinities();
+    logLine(`파티원 추가: ${member.name}`);
   }
 
   renderPartyPreview();
   resetMemberForm();
 }
 
-/** ========== Scenario engine (party) ========== */
+// ---------- Status handling ----------
+function hasStatus(m, sid){ return (m.statuses ?? []).includes(sid); }
+function addStatus(m, sid){
+  // 도끼 투사 패시브: 상태이상 무시
+  if(hasPassive(m, "ignore_status")) return;
+  if(!m.statuses.includes(sid)) m.statuses.push(sid);
+}
+function removeStatus(m, sid){
+  m.statuses = (m.statuses ?? []).filter(x => x !== sid);
+}
+function hasPassive(m, passiveId){
+  return (m.skills?.passive ?? []).includes(passiveId);
+}
 
-function traitConflict(a, b){
+// ---------- Effects ----------
+function applyToMember(m, effects){
+  for(const [k, v] of Object.entries(effects || {})){
+    if(k === "hp") m.hp = clamp(m.hp + v, 0, m.maxHp);
+    else if(k === "mp") m.mp = clamp(m.mp + v, 0, m.maxMp);
+    else if(k === "gold") state.gold += v;
+    else {
+      m[k] = (m[k] ?? 0) + v;
+    }
+  }
+}
+
+// ---------- Trait/Interaction checks ----------
+function traitConflict(a,b){
   const pairs = state.data.traits?.rules?.keywords?.conflicts ?? [];
   return pairs.some(([x,y]) => (x===a && y===b) || (x===b && y===a));
 }
-
 function computeTraitAffinity(playerTraits, bias){
   const rules = state.data.traits.rules.affinity;
   const preferred = bias?.preferred ?? [];
@@ -287,14 +330,13 @@ function computeTraitAffinity(playerTraits, bias){
   let delta = 0;
 
   for(const t of preferred){
-    if(playerTraits.includes(t)) delta += rules.match;
-    else delta += rules.partial;
+    delta += playerTraits.includes(t) ? rules.match : rules.partial;
   }
   for(const t of conflict){
     if(playerTraits.includes(t)) delta += rules.conflict;
   }
 
-  // 플레이어 내부 상극(약간 페널티)
+  // 내부 상극 패널티
   for(let i=0;i<playerTraits.length;i++){
     for(let j=i+1;j<playerTraits.length;j++){
       if(traitConflict(playerTraits[i], playerTraits[j])) delta -= 2;
@@ -303,71 +345,74 @@ function computeTraitAffinity(playerTraits, bias){
   return delta;
 }
 
-// 패시브 스킬 보정: 이벤트 tags 조건 만족 시 roll에 보너스
-function getPassiveRollBonus(member, stat, event){
-  const defs = state.data.skills.definitions;
+// ---------- Passive bonus for checks ----------
+function passiveCheckBonus(member, event, stat){
   let bonus = 0;
 
-  for(const sid of (member.skills.passive ?? [])){
-    const s = defs[sid];
-    if(!s || s.type !== "passive") continue;
-
-    // 조건: tags 포함
-    const condTags = s.condition?.eventTagsAny ?? [];
-    const ok = condTags.length === 0 || condTags.some(t => (event.tags ?? []).includes(t));
-    if(!ok) continue;
-
-    // stat bonus
-    if(s.bonus?.[stat]) bonus += s.bonus[stat];
+  // dungeon_expert puzzle_master: +luck on checks for puzzle tags
+  if(hasPassive(member, "puzzle_master")){
+    const cond = getSkillDef("puzzle_master")?.condition?.eventTagsAny ?? [];
+    const ok = cond.some(t => (event.tags ?? []).includes(t));
+    if(ok){
+      // 방식: "luck만큼 추가 보정"
+      bonus += (member.stats.luck ?? 0);
+    }
   }
+
   return bonus;
 }
 
-function rollStat(member, stat, event){
-  const base = member.stats[stat] ?? 0;
-  const d6 = 1 + Math.floor(Math.random()*6);
-  const luckBonus = Math.floor((member.stats.luck ?? 0) / 2);
-
-  const passiveBonus = getPassiveRollBonus(member, stat, event);
-
-  return base + d6 + luckBonus + passiveBonus;
+// ---------- Luck mechanic ----------
+function chance(pct){
+  return Math.random() < (pct / 100);
 }
 
-function applyEffectsToMember(member, effects){
-  for(const [k, v] of Object.entries(effects || {})){
-    if(k === "hp"){
-      member.hp = clamp(member.hp + v, 0, member.maxHp);
-    }else if(k === "affinity"){
-      member.affinity += v;
-    }else if(k === "gold"){
-      // gold는 파티 공용으로 처리 (인벤/보상에 자연스러움)
-      // 멤버에 gold를 넣지 않고, inventory/gold pool로 운영
-      state.gold = (state.gold ?? 0) + v;
-    }else{
-      member[k] = (member[k] ?? 0) + v;
-    }
+// ---------- Recommend actor ----------
+function recommendActorIndex(event){
+  // 전투면: 생존 + atk/mag 높은 사람, 힐러는 hp 낮은 상황에서 추천(간단)
+  if(event.type === "combat"){
+    let best = 0;
+    let bestScore = -1e9;
+    state.party.forEach((m, i) => {
+      if(m.hp <= 0) return;
+      const score =
+        (m.stats.atk ?? 0) * 1.2 +
+        (m.stats.mag ?? 0) * 1.2 +
+        (m.stats.def ?? 0) * 0.4 +
+        (m.stats.luck ?? 0) * 0.6;
+      if(score > bestScore){ bestScore = score; best = i; }
+    });
+    return best;
   }
+
+  // 체크 기반 이벤트면 stat 기반으로
+  const dcStat = event?.choices?.[0]?.check?.stat; // 대략
+  let best = 0;
+  let bestScore = -1e9;
+
+  state.party.forEach((m,i)=>{
+    if(m.hp <= 0) return;
+    const base = (dcStat ? (m.stats[dcStat] ?? 0) : 0);
+    const bonus = passiveCheckBonus(m, event, dcStat);
+    const trait = computeTraitAffinity(m.traits, event.traitBias);
+    const score = base*2 + bonus*1.5 + (m.stats.luck ?? 0)*0.5 + trait*0.2;
+    if(score > bestScore){ bestScore = score; best = i; }
+  });
+
+  return best;
 }
 
-function addStatus(member, statusId){
-  if(member.statuses.includes(statusId)) return;
-  member.statuses.push(statusId);
-}
-
-function removeStatus(member, statusId){
-  member.statuses = member.statuses.filter(x => x !== statusId);
-}
-
-function renderStatus(){
-  const hpSum = state.party.reduce((a,m)=>a+m.hp, 0);
-  const maxSum = state.party.reduce((a,m)=>a+m.maxHp, 0);
-  const affSum = state.party.reduce((a,m)=>a+m.affinity, 0);
-  const gold = state.gold ?? 0;
+// ---------- UI Render ----------
+function renderStatusBar(){
+  const hpSum = state.party.reduce((a,m)=>a+m.hp,0);
+  const hpMax = state.party.reduce((a,m)=>a+m.maxHp,0);
+  const mpSum = state.party.reduce((a,m)=>a+m.mp,0);
+  const mpMax = state.party.reduce((a,m)=>a+m.maxMp,0);
 
   $("#statusBar").innerHTML = `
-    <div class="pill">파티 HP <b>${hpSum}</b> / ${maxSum}</div>
-    <div class="pill">파티 GOLD <b>${gold}</b></div>
-    <div class="pill">총 호감도 <b>${affSum}</b></div>
+    <div class="pill">파티 HP <b>${hpSum}</b> / ${hpMax}</div>
+    <div class="pill">파티 MP <b>${mpSum}</b> / ${mpMax}</div>
+    <div class="pill">GOLD <b>${state.gold}</b></div>
     <div class="pill">진행 <b>${state.eventIndex + 1}</b> / ${state.scenario.events.length}</div>
   `;
 }
@@ -376,21 +421,24 @@ function renderPartyRunList(){
   const wrap = $("#partyRunList");
   wrap.innerHTML = "";
 
-  state.party.forEach((m, i) => {
-    const statuses = (m.statuses ?? []).map(sid => state.data.statuses.definitions[sid]?.name ?? sid);
+  state.party.forEach((m) => {
+    const statusNames = (m.statuses ?? []).map(sid => getStatusDef(sid)?.name ?? sid);
+    const avgAff = avgAffinityFor(m.id);
+
     const div = document.createElement("div");
     div.className = "partyRunItem";
     div.innerHTML = `
       <div class="row">
-        <div style="font-weight:800;">${escapeHTML(m.name)} <span class="muted small">/ ${escapeHTML(m.jobName)}</span></div>
-        <div style="display:flex; gap:8px; align-items:center;">
+        <div style="font-weight:800;">${esc(m.name)} <span class="muted small">/ ${esc(m.jobName)}</span></div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
           <span class="badge">HP <b>${m.hp}</b>/${m.maxHp}</span>
-          <span class="badge">호감도 <b>${m.affinity}</b></span>
+          <span class="badge">MP <b>${m.mp}</b>/${m.maxMp}</span>
+          <span class="badge">평균 호감도 <b>${avgAff}</b></span>
         </div>
       </div>
       <div class="tags">
-        <span class="tag">성격: ${escapeHTML(m.traits.join(", ") || "없음")}</span>
-        <span class="tag">상태: ${escapeHTML(statuses.join(", ") || "정상")}</span>
+        <span class="tag">성격: ${esc(m.traits.join(", ") || "없음")}</span>
+        <span class="tag">상태: ${esc(statusNames.join(", ") || "정상")}</span>
       </div>
     `;
     wrap.appendChild(div);
@@ -407,26 +455,48 @@ function renderPartyRunList(){
   });
 }
 
+function renderAffinityPairs(){
+  const wrap = $("#affinityPairs");
+  wrap.innerHTML = "";
+  if(state.party.length < 2){
+    wrap.innerHTML = `<div class="muted small">파티원이 2명 이상이어야 표시됩니다.</div>`;
+    return;
+  }
+
+  for(let i=0;i<state.party.length;i++){
+    for(let j=i+1;j<state.party.length;j++){
+      const a = state.party[i], b = state.party[j];
+      const val = getPairAffinity(a.id,b.id);
+      const div = document.createElement("div");
+      div.className = "affPair";
+      div.innerHTML = `
+        <div class="row">
+          <div class="muted small">${esc(a.name)} ↔ ${esc(b.name)}</div>
+          <div class="affVal ${val>=0 ? "pos":"neg"}">${val>=0?"+":""}${val}</div>
+        </div>
+      `;
+      wrap.appendChild(div);
+    }
+  }
+}
+
 function renderInventory(){
   const wrap = $("#inventoryList");
   wrap.innerHTML = "";
-
   if(state.inventory.length === 0){
     wrap.innerHTML = `<div class="muted small">인벤토리가 비어 있습니다.</div>`;
     return;
   }
-
   for(const it of state.inventory){
-    const def = state.data.items.definitions[it.itemId];
+    const def = getItemDef(it.itemId);
     if(!def) continue;
-
     const btn = document.createElement("button");
     btn.className = "itemBtn";
     btn.innerHTML = `
-      <div style="font-weight:800;">${escapeHTML(def.name)} <span class="muted small">x${it.qty}</span></div>
-      <div class="meta">${escapeHTML(def.description)}</div>
+      <div style="font-weight:800;">${esc(def.name)} <span class="muted small">x${it.qty}</span></div>
+      <div class="meta">${esc(def.description)}</div>
     `;
-    btn.onclick = () => openTargetModal("item", it.itemId);
+    btn.onclick = () => openTargetModal("item", it.itemId, null);
     wrap.appendChild(btn);
   }
 }
@@ -435,32 +505,49 @@ function renderSkills(){
   const wrap = $("#skillsList");
   wrap.innerHTML = "";
 
-  // 액티브 스킬만 버튼으로, 패시브는 설명으로 표시
   const defs = state.data.skills.definitions;
 
-  // 파티 전체 액티브 스킬(중복은 표시해도 됨)
-  const lines = [];
   state.party.forEach((m, mi) => {
+    // active skill buttons
     for(const sid of (m.skills.active ?? [])){
       const s = defs[sid];
       if(!s || s.type !== "active") continue;
 
       const btn = document.createElement("button");
       btn.className = "skillBtn";
+      const mpOk = m.mp > 0;
       btn.innerHTML = `
-        <div style="font-weight:800;">${escapeHTML(s.name)} <span class="muted small">(${escapeHTML(m.name)})</span></div>
-        <div class="meta">${escapeHTML(s.description)}</div>
+        <div style="font-weight:800;">${esc(s.name)} <span class="muted small">(${esc(m.name)} · MP ${m.mp}/${m.maxMp})</span></div>
+        <div class="meta">${esc(s.description)}</div>
       `;
-      btn.onclick = () => openTargetModal("skill", sid, mi);
+      btn.onclick = () => {
+        if(!mpOk){
+          alert(`${m.name}의 MP가 0이라 액티브 스킬을 사용할 수 없습니다.`);
+          return;
+        }
+        if(s.target === "enemy" || s.target === "all_enemies"){
+          // 전투 중에만 사용 가능(간단)
+          if(!state.combat?.inCombat){
+            alert("이 스킬은 전투 중에 사용할 수 있어요.");
+            return;
+          }
+          openEnemyModal("skill", sid, mi);
+        }else if(s.target === "party"){
+          useSkill(sid, mi, null);
+        }else{
+          openTargetModal("skill", sid, mi);
+        }
+      };
       wrap.appendChild(btn);
     }
 
-    const passive = (m.skills.passive ?? []).map(sid => defs[sid]).filter(Boolean);
-    if(passive.length){
+    // passive list
+    const passives = (m.skills.passive ?? []).map(id => defs[id]).filter(Boolean);
+    if(passives.length){
       const p = document.createElement("div");
       p.className = "muted small";
       p.style.marginTop = "6px";
-      p.innerHTML = `<b>${escapeHTML(m.name)}</b> 패시브: ${escapeHTML(passive.map(x=>x.name).join(", "))}`;
+      p.innerHTML = `<b>${esc(m.name)}</b> 패시브: ${esc(passives.map(x=>x.name).join(", "))}`;
       wrap.appendChild(p);
     }
   });
@@ -470,39 +557,51 @@ function renderSkills(){
   }
 }
 
-/** ===== Modal (target picking) ===== */
+function renderAll(){
+  renderStatusBar();
+  renderPartyRunList();
+  renderAffinityPairs();
+  renderInventory();
+  renderSkills();
+}
 
-function openTargetModal(type, id, casterIndex = null){
+// ---------- Modal ----------
+function closeModal(){
+  $("#modal").classList.add("hidden");
+  state.activeModal = null;
+}
+
+function openTargetModal(type, id, casterIndex){
   state.activeModal = { type, id, casterIndex };
+
   const modal = $("#modal");
   const body = $("#modalBody");
   const title = $("#modalTitle");
   const desc = $("#modalDesc");
-
   body.innerHTML = "";
 
   if(type === "item"){
-    const def = state.data.items.definitions[id];
+    const def = getItemDef(id);
     title.textContent = `아이템 대상 선택: ${def?.name ?? id}`;
     desc.textContent = def?.description ?? "";
   }else{
-    const def = state.data.skills.definitions[id];
-    const caster = casterIndex != null ? state.party[casterIndex] : null;
+    const def = getSkillDef(id);
+    const caster = state.party[casterIndex];
     title.textContent = `스킬 대상 선택: ${def?.name ?? id}`;
-    desc.textContent = caster ? `${caster.name} 사용` : (def?.description ?? "");
+    desc.textContent = caster ? `${caster.name} 사용 (MP 1 소모)` : (def?.description ?? "");
   }
 
   state.party.forEach((m, idx)=>{
+    const statusNames = (m.statuses ?? []).map(sid => getStatusDef(sid)?.name ?? sid);
     const btn = document.createElement("button");
     btn.className = "targetBtn";
-    const statuses = (m.statuses ?? []).map(sid => state.data.statuses.definitions[sid]?.name ?? sid);
     btn.innerHTML = `
-      <div style="font-weight:800;">${escapeHTML(m.name)} <span class="muted small">/ ${escapeHTML(m.jobName)}</span></div>
-      <div class="muted small">HP ${m.hp}/${m.maxHp} · 상태: ${escapeHTML(statuses.join(", ") || "정상")}</div>
+      <div style="font-weight:800;">${esc(m.name)} <span class="muted small">/ ${esc(m.jobName)}</span></div>
+      <div class="muted small">HP ${m.hp}/${m.maxHp} · MP ${m.mp}/${m.maxMp} · 상태: ${esc(statusNames.join(", ") || "정상")}</div>
     `;
     btn.onclick = () => {
-      if(type === "item") useItemOnTarget(id, idx);
-      else useSkillOnTarget(id, casterIndex, idx);
+      if(type === "item") useItem(id, idx);
+      else useSkill(id, casterIndex, idx);
       closeModal();
     };
     body.appendChild(btn);
@@ -511,135 +610,535 @@ function openTargetModal(type, id, casterIndex = null){
   modal.classList.remove("hidden");
 }
 
-function closeModal(){
-  $("#modal").classList.add("hidden");
-  state.activeModal = null;
+function openEnemyModal(type, id, casterIndex){
+  if(!state.combat?.inCombat){
+    alert("전투 중이 아닙니다.");
+    return;
+  }
+  state.activeModal = { type, id, casterIndex };
+
+  const modal = $("#modal");
+  const body = $("#modalBody");
+  const title = $("#modalTitle");
+  const desc = $("#modalDesc");
+  body.innerHTML = "";
+
+  const def = getSkillDef(id);
+  const caster = state.party[casterIndex];
+  title.textContent = `대상(적) 선택: ${def?.name ?? id}`;
+  desc.textContent = caster ? `${caster.name} 사용 (MP 1 소모)` : (def?.description ?? "");
+
+  state.combat.monsters.forEach((mon, idx)=>{
+    const btn = document.createElement("button");
+    btn.className = "targetBtn";
+    btn.innerHTML = `
+      <div style="font-weight:800;">${esc(mon.name)}</div>
+      <div class="muted small">HP ${mon.hp}/${mon.maxHp} · ATK ${mon.atk} · MAG ${mon.mag} · DEF ${mon.def}</div>
+    `;
+    btn.onclick = () => {
+      useSkill(id, casterIndex, null, idx);
+      closeModal();
+    };
+    body.appendChild(btn);
+  });
+
+  modal.classList.remove("hidden");
 }
 
-/** ===== Items / Status effects ===== */
-
-function hasStatus(member, statusId){
-  return (member.statuses ?? []).includes(statusId);
+// ---------- Inventory ----------
+function addItem(itemId, qty){
+  const it = state.inventory.find(x => x.itemId === itemId);
+  if(it) it.qty += qty;
+  else state.inventory.push({ itemId, qty });
 }
 
-function useItemOnTarget(itemId, targetIndex){
+function useItem(itemId, targetIndex){
   const inv = state.inventory.find(x => x.itemId === itemId);
   if(!inv || inv.qty <= 0) return;
 
-  const item = state.data.items.definitions[itemId];
+  const item = getItemDef(itemId);
   const target = state.party[targetIndex];
   if(!item || !target) return;
 
-  appendLog(`${nowLogPrefix()}아이템 사용: ${item.name} → ${target.name}`);
+  logLine(`아이템 사용: ${item.name} → ${target.name}`);
 
-  // Potion example: if target has potion_addiction, potion healing blocked
-  if(itemId === "hp_potion"){
-    if(hasStatus(target, "potion_addiction")){
-      appendLog(`하지만 ${target.name}은(는) '포션중독' 상태로 포션 회복이 불가능하다.`);
-    }else{
-      target.hp = clamp(target.hp + 5, 0, target.maxHp);
-      appendLog(`${target.name} HP +5`);
-    }
-
-    // 1% chance to apply potion_addiction
-    const roll = Math.random();
-    if(roll < 0.01){
-      addStatus(target, "potion_addiction");
-      appendLog(`${target.name}에게 상태이상 '포션중독'이 부여되었다!`);
-    }
+  // block if has status (HP potion addiction)
+  if(item.extra?.blockIfHasStatus && hasStatus(target, item.extra.blockIfHasStatus)){
+    logLine(`${target.name}은(는) '${getStatusDef(item.extra.blockIfHasStatus)?.name ?? item.extra.blockIfHasStatus}' 상태로 포션 회복이 불가능하다.`);
   }else{
-    // generic item effects (optional extension)
-    applyEffectsToMember(target, item.effects ?? {});
+    applyToMember(target, item.effects ?? {});
+    if(item.effects?.hp) logLine(`${target.name} HP +${item.effects.hp}`);
+    if(item.effects?.mp) logLine(`${target.name} MP +${item.effects.mp}`);
+  }
+
+  // chance status
+  if(item.extra?.applyStatus && (item.extra?.chance ?? 0) > 0){
+    if(Math.random() < item.extra.chance){
+      addStatus(target, item.extra.applyStatus);
+      logLine(`${target.name}에게 상태이상 '${getStatusDef(item.extra.applyStatus)?.name ?? item.extra.applyStatus}'이 부여되었다!`);
+    }
   }
 
   inv.qty -= 1;
-  if(inv.qty <= 0){
-    state.inventory = state.inventory.filter(x => x.itemId !== itemId);
-  }
+  if(inv.qty <= 0) state.inventory = state.inventory.filter(x => x.itemId !== itemId);
 
-  renderAllRunUI();
+  renderAll();
 }
 
-/** ===== Skills ===== */
-
-function useSkillOnTarget(skillId, casterIndex, targetIndex){
-  const defs = state.data.skills.definitions;
-  const s = defs[skillId];
-  const caster = state.party[casterIndex];
-  const target = state.party[targetIndex];
-  if(!s || !caster || !target) return;
-
-  appendLog(`${nowLogPrefix()}스킬 사용: ${caster.name} - ${s.name} → ${target.name}`);
-
-  // basic examples
-  if(skillId === "purify"){
-    // remove potion_addiction
-    if(hasStatus(target, "potion_addiction")){
-      removeStatus(target, "potion_addiction");
-      appendLog(`${target.name}의 '포션중독'이 정화되었다.`);
-    }else{
-      appendLog(`정화할 상태이상이 없다.`);
-    }
-  }else if(skillId === "heal"){
-    // heal that is NOT potion-based -> works even with potion_addiction
-    target.hp = clamp(target.hp + 4, 0, target.maxHp);
-    appendLog(`${target.name} HP +4 (치유)`);
-  }else if(skillId === "fireball"){
-    // 시나리오 보정: 다음 1회 마법 판정에 +2 버프 (간단 구현: tempBuff)
-    caster.temp = caster.temp ?? {};
-    caster.temp.nextMagBonus = (caster.temp.nextMagBonus ?? 0) + 2;
-    appendLog(`${caster.name}은(는) 다음 마법 판정에 +2 보너스를 얻었다.`);
-  }else if(skillId === "guard"){
-    // 다음 피해 -1 버프
-    target.temp = target.temp ?? {};
-    target.temp.damageReduce = (target.temp.damageReduce ?? 0) + 1;
-    appendLog(`${target.name}은(는) 다음 피해 -1 보호를 얻었다.`);
-  }else{
-    // generic skill effect support
-    if(s.effects){
-      applyEffectsToMember(target, s.effects);
-      appendLog(`효과가 적용되었다.`);
-    }
-  }
-
-  renderAllRunUI();
+// ---------- Skills ----------
+function spendMpOrFail(caster, mpCost){
+  if(caster.mp < mpCost) return false;
+  caster.mp -= mpCost;
+  return true;
 }
 
-function consumeTempOnRoll(member, stat){
-  let bonus = 0;
-  if(member.temp?.nextMagBonus && stat === "mag"){
-    bonus += member.temp.nextMagBonus;
-    member.temp.nextMagBonus = 0;
+function applyTemp(member, tempObj){
+  member.temp = member.temp ?? {};
+  for(const [k,v] of Object.entries(tempObj || {})){
+    member.temp[k] = (member.temp[k] ?? 0) + v;
   }
-  return bonus;
 }
 
-function consumeDamageReduce(member, dmg){
-  const red = member.temp?.damageReduce ?? 0;
-  if(red > 0 && dmg < 0){
-    const reduced = Math.min(red, Math.abs(dmg));
-    member.temp.damageReduce -= reduced;
-    return dmg + reduced; // dmg is negative
+function physicalDamage(attacker, defender, raw){
+  // luck crit
+  let dmg = raw;
+  if(chance(attacker.stats.luck ?? 0)){
+    dmg = Math.floor(dmg * 2);
+    logLine(`치명타! (${attacker.name ?? attacker.name})`);
   }
+  // defender evade
+  if(chance(defender.luck ?? defender.stats?.luck ?? 0)){
+    logLine(`회피! ${defender.name ?? defender.name}이(가) 공격을 피했다.`);
+    return 0;
+  }
+  // def blocks 0.5*def
+  const reduced = Math.floor((defender.def ?? defender.stats?.def ?? 0) * 0.5);
+  dmg = Math.max(0, dmg - reduced);
+
+  // damageHalf temp
+  if(defender.temp?.damageHalf){
+    dmg = Math.floor(dmg / 2);
+    defender.temp.damageHalf = Math.max(0, defender.temp.damageHalf - 1);
+    logLine(`${defender.name ?? defender.name}의 보호로 피해가 절반이 되었다.`);
+  }
+
   return dmg;
 }
 
-/** ===== Event rendering & resolving ===== */
+function magicDamage(attacker, defender, raw){
+  // crit
+  let dmg = raw;
+  if(chance(attacker.stats.luck ?? 0)){
+    dmg = Math.floor(dmg * 2);
+    logLine(`치명타! (${attacker.name ?? attacker.name})`);
+  }
+  // evade
+  if(chance(defender.luck ?? defender.stats?.luck ?? 0)){
+    logLine(`회피! ${defender.name ?? defender.name}이(가) 마법을 피했다.`);
+    return 0;
+  }
+  // def blocks too
+  const reduced = Math.floor((defender.def ?? defender.stats?.def ?? 0) * 0.5);
+  dmg = Math.max(0, dmg - reduced);
+
+  if(defender.temp?.damageHalf){
+    dmg = Math.floor(dmg / 2);
+    defender.temp.damageHalf = Math.max(0, defender.temp.damageHalf - 1);
+    logLine(`${defender.name ?? defender.name}의 보호로 피해가 절반이 되었다.`);
+  }
+
+  return dmg;
+}
+
+function useSkill(skillId, casterIndex, targetIndex, enemyIndex=null){
+  const s = getSkillDef(skillId);
+  const caster = state.party[casterIndex];
+  if(!s || !caster) return;
+
+  const mpCost = s.mpCost ?? 1;
+  if(!spendMpOrFail(caster, mpCost)){
+    alert(`${caster.name}의 MP가 부족합니다.`);
+    return;
+  }
+
+  // target resolution
+  const allAllies = state.party;
+  const allEnemies = state.combat?.monsters ?? [];
+  const targetAlly = (targetIndex != null) ? state.party[targetIndex] : null;
+  const targetEnemy = (enemyIndex != null) ? allEnemies[enemyIndex] : null;
+
+  logLine(`스킬 사용: ${caster.name} - ${s.name}`);
+
+  // remove status
+  if(s.removeStatus?.length && targetAlly){
+    for(const sid of s.removeStatus){
+      if(hasStatus(targetAlly, sid)){
+        removeStatus(targetAlly, sid);
+        logLine(`${targetAlly.name}의 '${getStatusDef(sid)?.name ?? sid}'이 제거되었다.`);
+      }else{
+        logLine(`${targetAlly.name}에게 제거할 '${getStatusDef(sid)?.name ?? sid}'이 없다.`);
+      }
+    }
+  }
+
+  // heal
+  if(s.heal){
+    const v = s.heal.value ?? 0;
+    if(s.target === "all_allies"){
+      allAllies.forEach(a => { a.hp = clamp(a.hp + v, 0, a.maxHp); });
+      logLine(`아군 전원 HP +${v}`);
+    }else if(targetAlly){
+      targetAlly.hp = clamp(targetAlly.hp + v, 0, targetAlly.maxHp);
+      logLine(`${targetAlly.name} HP +${v}`);
+    }
+  }
+
+  // damage
+  if(s.damage){
+    if(!state.combat?.inCombat){
+      logLine("하지만 전투 중이 아니어서 공격 스킬은 효과가 없다.");
+    }else{
+      const stat = s.damage.stat;
+      const mult = s.damage.mult ?? 1;
+      const raw = Math.floor((caster.stats[stat] ?? 0) * mult);
+
+      if(s.target === "all_enemies"){
+        allEnemies.forEach(mon => {
+          const dmg = (s.damage.kind === "magic")
+            ? magicDamage(caster, mon, raw)
+            : physicalDamage(caster, mon, raw);
+          mon.hp = clamp(mon.hp - dmg, 0, mon.maxHp);
+          logLine(`${mon.name} 피해 ${dmg}`);
+        });
+      }else if(targetEnemy){
+        const dmg = (s.damage.kind === "magic")
+          ? magicDamage(caster, targetEnemy, raw)
+          : physicalDamage(caster, targetEnemy, raw);
+        targetEnemy.hp = clamp(targetEnemy.hp - dmg, 0, targetEnemy.maxHp);
+        logLine(`${targetEnemy.name} 피해 ${dmg}`);
+      }
+    }
+  }
+
+  // temp buffs
+  if(s.applyTemp){
+    if(targetAlly) applyTemp(targetAlly, s.applyTemp);
+    else applyTemp(caster, s.applyTemp);
+  }
+
+  // party affinity (bard chord)
+  if(s.affinityAllPairs?.byCasterLuck){
+    const delta = caster.stats.luck ?? 0;
+    for(let i=0;i<state.party.length;i++){
+      for(let j=i+1;j<state.party.length;j++){
+        addPairAffinity(state.party[i].id, state.party[j].id, delta);
+      }
+    }
+    logLine(`화음이 울린다… 파티 호감도(모든 페어) +${delta}`);
+  }
+
+  renderAll();
+  if(state.combat?.inCombat) renderCombatChoices(); // keep buttons updated
+}
+
+// ---------- Combat ----------
+function startCombatFromEvent(ev){
+  const monsters = (ev.combat?.monsters ?? []).map(m => ({
+    ...m,
+    maxHp: m.hp
+  }));
+
+  state.combat = {
+    inCombat: true,
+    monsters,
+    reward: ev.combat?.reward ?? { gold: 0, items: [] }
+  };
+
+  logLine(`전투 시작: ${ev.title}`);
+}
+
+function tryStealthSkipCombat(){
+  // 파티 중 은둔자(stealth) 패시브 가진 사람 있으면 1명이라도 성공하면 회피
+  const candidates = state.party.filter(m => m.hp>0 && hasPassive(m, "stealth"));
+  if(candidates.length === 0) return { ok:false, reason:"은신술 보유자가 없다." };
+
+  // 가장 luck 높은 은신자 사용
+  const best = candidates.reduce((a,b)=> (a.stats.luck ?? 0) >= (b.stats.luck ?? 0) ? a : b);
+  const pct = best.stats.luck ?? 0;
+  const ok = chance(pct);
+  return { ok, reason: ok ? `${best.name}의 은신술 성공! (확률 ${pct}%)` : `${best.name}의 은신술 실패… (확률 ${pct}%)` };
+}
+
+function livingParty(){ return state.party.filter(m => m.hp > 0); }
+function livingMonsters(){ return (state.combat?.monsters ?? []).filter(m => m.hp > 0); }
+
+function partyAutoAction(){
+  // 아주 단순 AI:
+  // - HP가 많이 낮으면 힐 스킬(성직자/정령/성기사) 사용
+  // - 적이 2마리 이상이면 뇌격 우선
+  // - 나머지는 공격 스킬 있으면 사용
+  // - 없으면 기본공격
+  const mons = livingMonsters();
+  if(mons.length === 0) return;
+
+  const allies = livingParty();
+
+  // 힐 필요 판단
+  const low = allies.find(a => a.hp > 0 && a.hp <= Math.floor(a.maxHp * 0.45));
+  const healers = allies.filter(a => a.mp>0 && (a.skills.active ?? []).some(sid => {
+    const s = getSkillDef(sid);
+    return s?.heal;
+  }));
+
+  if(low && healers.length){
+    // 가장 mag 높은 힐러가 힐
+    const caster = healers.reduce((a,b)=> (a.stats.mag ?? 0) >= (b.stats.mag ?? 0) ? a : b);
+    const mi = state.party.findIndex(x => x.id === caster.id);
+    // 우선순위: divine_hand(전원) > spirit_heal > paladin_heal
+    const pref = ["divine_hand","spirit_heal","paladin_heal"];
+    const sid = pref.find(x => caster.skills.active.includes(x)) ?? caster.skills.active[0];
+    const s = getSkillDef(sid);
+
+    if(s.target === "all_allies") useSkill(sid, mi, null);
+    else useSkill(sid, mi, state.party.findIndex(x => x.id === low.id));
+    return;
+  }
+
+  // 광역(뇌격)
+  const storm = allies.find(a => a.mp>0 && a.skills.active.includes("thunder_strike") && mons.length >= 2);
+  if(storm){
+    useSkill("thunder_strike", state.party.findIndex(x=>x.id===storm.id), null);
+    return;
+  }
+
+  // 단일 공격 스킬(강타/파이어볼)
+  const attacker = allies.find(a => a.mp>0 && (a.skills.active ?? []).some(sid => getSkillDef(sid)?.damage && getSkillDef(sid)?.target === "enemy"));
+  if(attacker){
+    const mi = state.party.findIndex(x => x.id === attacker.id);
+    const sid = attacker.skills.active.find(sid => getSkillDef(sid)?.damage && getSkillDef(sid)?.target === "enemy");
+    const target = pick(mons);
+    const ei = state.combat.monsters.findIndex(x => x.id === target.id);
+    useSkill(sid, mi, null, ei);
+    return;
+  }
+
+  // 기본 공격: 모든 생존자가 1회씩(간단)
+  allies.forEach(a=>{
+    if(livingMonsters().length === 0) return;
+    const target = pick(livingMonsters());
+    const raw = (a.stats.atk ?? 0);
+    const dmg = physicalDamage(a, target, raw);
+    target.hp = clamp(target.hp - dmg, 0, target.maxHp);
+    logLine(`${a.name} 기본공격 → ${target.name} 피해 ${dmg}`);
+  });
+}
+
+function monstersAutoAttack(){
+  const mons = livingMonsters();
+  const allies = livingParty();
+  if(mons.length === 0 || allies.length === 0) return;
+
+  mons.forEach(mon=>{
+    if(livingParty().length === 0) return;
+
+    const target = pick(livingParty());
+    // mon uses higher of atk/mag randomly (simple)
+    const useMagic = (mon.mag ?? 0) > (mon.atk ?? 0) ? Math.random() < 0.7 : Math.random() < 0.3;
+    if(useMagic){
+      const raw = mon.mag ?? 0;
+      const dmg = magicDamage(mon, target, raw);
+      target.hp = clamp(target.hp - dmg, 0, target.maxHp);
+      logLine(`${mon.name} 마법공격 → ${target.name} 피해 ${dmg}`);
+    }else{
+      const raw = mon.atk ?? 0;
+      const dmg = physicalDamage(mon, target, raw);
+      target.hp = clamp(target.hp - dmg, 0, target.maxHp);
+      logLine(`${mon.name} 물리공격 → ${target.name} 피해 ${dmg}`);
+    }
+  });
+}
+
+function combatRound(){
+  if(!state.combat?.inCombat) return;
+  if(livingParty().length === 0){
+    logLine("파티 전멸…");
+    state.combat.inCombat = false;
+    return;
+  }
+  if(livingMonsters().length === 0){
+    logLine("적을 모두 처치했다!");
+    endCombatWin();
+    return;
+  }
+
+  partyAutoAction();
+
+  if(livingMonsters().length === 0){
+    logLine("적을 모두 처치했다!");
+    endCombatWin();
+    return;
+  }
+
+  monstersAutoAttack();
+
+  if(livingParty().length === 0){
+    logLine("파티 전멸…");
+    state.combat.inCombat = false;
+    renderAll();
+    renderCombatChoices();
+    return;
+  }
+
+  renderAll();
+  renderCombatChoices();
+}
+
+function endCombatWin(){
+  const reward = state.combat.reward ?? { gold: 0, items: [] };
+  state.gold += (reward.gold ?? 0);
+  logLine(`전투 보상: GOLD +${reward.gold ?? 0}`);
+
+  for(const it of (reward.items ?? [])){
+    addItem(it.itemId, it.qty);
+    logLine(`획득: ${getItemDef(it.itemId)?.name ?? it.itemId} x${it.qty}`);
+  }
+
+  state.combat.inCombat = false;
+  state.combat = null;
+
+  // 전투 이벤트 종료 후 다음으로 진행 버튼 제공
+  renderAll();
+  renderEventChoicesAfterCombat();
+}
+
+// ---------- Event flow ----------
+function currentEvent(){
+  return state.scenario.events[state.eventIndex];
+}
+
+function setEventUI(ev){
+  $("#eventTitle").textContent = ev.title;
+  $("#eventText").textContent = ev.text ?? "";
+  $("#eventTypeBadge").innerHTML = `<b>${esc(ev.type ?? "event")}</b>`;
+
+  // actor 추천
+  const rec = recommendActorIndex(ev);
+  $("#actorSelect").value = String(rec);
+  $("#recommendText").textContent = `추천 행동자: ${state.party[rec]?.name ?? ""}`;
+}
 
 function renderEvent(){
-  const ev = state.scenario.events[state.eventIndex];
-  $("#eventTitle").textContent = ev.title;
-  $("#eventText").textContent = ev.text;
+  const ev = currentEvent();
+  setEventUI(ev);
 
-  const wrap = $("#choices");
-  wrap.innerHTML = "";
-  for(const ch of ev.choices){
+  // combat special
+  if(ev.type === "combat"){
+    $("#choices").innerHTML = "";
+    // 전투 회피 버튼(은신술)
+    const skipBtn = document.createElement("button");
+    skipBtn.className = "choiceBtn";
+    skipBtn.textContent = "은신으로 전투 회피 시도(은둔자 패시브)";
+    skipBtn.onclick = () => {
+      const r = tryStealthSkipCombat();
+      logLine(r.reason);
+      if(r.ok){
+        // 회피 성공: 전투 없이 보상 없음(원하면 소량 보상도 가능)
+        logLine("전투를 피했다. 조용히 지나간다.");
+        postEventAffinityTick();
+        goNextEvent();
+      }else{
+        // 실패: 전투 시작
+        startCombatFromEvent(ev);
+        renderCombatChoices();
+      }
+    };
+    $("#choices").appendChild(skipBtn);
+
+    const startBtn = document.createElement("button");
+    startBtn.className = "choiceBtn";
+    startBtn.textContent = "전투 시작(자동 전투)";
+    startBtn.onclick = () => {
+      startCombatFromEvent(ev);
+      renderCombatChoices();
+    };
+    $("#choices").appendChild(startBtn);
+
+    return;
+  }
+
+  // rest
+  if(ev.type === "rest"){
+    $("#choices").innerHTML = "";
+    const btn = document.createElement("button");
+    btn.className = "choiceBtn";
+    btn.textContent = `휴식하기 (파티 HP +${ev.rest?.hp ?? 0}, MP +${ev.rest?.mp ?? 0})`;
+    btn.onclick = () => {
+      const hp = ev.rest?.hp ?? 0;
+      const mp = ev.rest?.mp ?? 0;
+      state.party.forEach(m => {
+        if(m.hp>0){
+          m.hp = clamp(m.hp + hp, 0, m.maxHp);
+          m.mp = clamp(m.mp + mp, 0, m.maxMp);
+        }
+      });
+      logLine(`휴식 효과: 파티 HP +${hp}, MP +${mp}`);
+      postEventAffinityTick();
+      renderAll();
+      goNextEvent();
+    };
+    $("#choices").appendChild(btn);
+    return;
+  }
+
+  // shop
+  if(ev.type === "shop"){
+    $("#choices").innerHTML = "";
+    const offers = ev.shop?.offers ?? [];
+    offers.forEach(off=>{
+      const def = getItemDef(off.itemId);
+      const btn = document.createElement("button");
+      btn.className = "choiceBtn";
+      btn.textContent = `구매: ${def?.name ?? off.itemId} (${off.price}G)`;
+      btn.onclick = () => {
+        if(state.gold < off.price){
+          logLine("GOLD가 부족하다.");
+          return;
+        }
+        state.gold -= off.price;
+        addItem(off.itemId, 1);
+        logLine(`구매 완료: ${def?.name ?? off.itemId} x1 (-${off.price}G)`);
+        renderAll();
+      };
+      $("#choices").appendChild(btn);
+    });
+
+    const leave = document.createElement("button");
+    leave.className = "choiceBtn";
+    leave.textContent = "상인을 떠난다";
+    leave.onclick = () => {
+      postEventAffinityTick();
+      goNextEvent();
+    };
+    $("#choices").appendChild(leave);
+    return;
+  }
+
+  // normal choices
+  $("#choices").innerHTML = "";
+  (ev.choices ?? []).forEach(ch=>{
     const btn = document.createElement("button");
     btn.className = "choiceBtn";
     btn.textContent = ch.label;
     btn.onclick = () => resolveChoice(ev, ch);
-    wrap.appendChild(btn);
-  }
+    $("#choices").appendChild(btn);
+  });
+}
+
+function checkRoll(member, ev, stat){
+  const base = member.stats[stat] ?? 0;
+  const bonus = passiveCheckBonus(member, ev, stat);
+  const d6 = 1 + Math.floor(Math.random()*6);
+  return base + bonus + d6;
 }
 
 function resolveChoice(ev, ch){
@@ -647,38 +1146,93 @@ function resolveChoice(ev, ch){
   const actor = state.party[actorIndex];
   if(!actor) return;
 
-  // 판정
   const stat = ch.check?.stat;
   const dc = ch.check?.dc ?? 10;
-  const rolled = stat ? (rollStat(actor, stat, ev) + consumeTempOnRoll(actor, stat)) : 999;
+  const rolled = stat ? checkRoll(actor, ev, stat) : 999;
   const ok = rolled >= dc;
+  const out = ok ? ch.success : ch.fail;
 
-  const outcome = ok ? ch.success : ch.fail;
+  logLine(`${ev.title} - 행동자: ${actor.name} - 선택: "${ch.label}"`);
+  if(stat) logLine(`판정: ${stat.toUpperCase()} ${rolled} vs DC ${dc} → ${ok ? "성공" : "실패"}`);
+  logLine(out.log);
 
-  appendLog(`${ev.title} - 행동자: ${actor.name} - 선택: "${ch.label}"`);
-  if(stat) appendLog(`판정: ${stat.toUpperCase()} ${rolled} vs DC ${dc} → ${ok ? "성공" : "실패"}`);
+  // apply effects (to actor)
+  applyToMember(actor, out.effects ?? {});
+  // gold is in out.effects.gold
+  if(out.effects?.gold) logLine(`GOLD ${out.effects.gold>=0?"+":""}${out.effects.gold}`);
 
-  appendLog(outcome.log);
-
-  // 효과 적용 (피해 감소 버프 처리)
-  const effects = { ...(outcome.effects ?? {}) };
-  if(typeof effects.hp === "number" && effects.hp < 0){
-    effects.hp = consumeDamageReduce(actor, effects.hp);
-  }
-  applyEffectsToMember(actor, effects);
-
-  // 성격 상호작용은 "행동자 호감도"로 누적
+  // 성격 기반: "행동자 ↔ 파티원 모두" 호감도 변화 (간단하고 체감 큼)
   const traitDelta = computeTraitAffinity(actor.traits, ev.traitBias);
-  actor.affinity += traitDelta;
-  appendLog(`성격 상호작용: ${actor.name} 호감도 ${traitDelta >= 0 ? "+" : ""}${traitDelta}`);
+  state.party.forEach(m=>{
+    if(m.id !== actor.id){
+      addPairAffinity(actor.id, m.id, traitDelta);
+    }
+  });
+  logLine(`성격 상호작용: ${actor.name} 관련 페어 호감도 ${traitDelta>=0?"+":""}${traitDelta}`);
 
-  renderAllRunUI();
+  postEventAffinityTick();
+  renderAll();
+  goNextEvent();
+}
 
-  // 사망 체크 (파티 전멸 기준은 단순: 전원 HP 0이면 종료)
-  const alive = state.party.some(m => m.hp > 0);
-  if(!alive){
+function renderCombatChoices(){
+  const ev = currentEvent();
+  $("#eventTypeBadge").innerHTML = `<b>combat</b>`;
+  $("#choices").innerHTML = "";
+
+  const mons = livingMonsters();
+  const monText = mons.map(m => `${m.name}(${m.hp}/${m.maxHp})`).join(" · ") || "없음";
+  const info = document.createElement("div");
+  info.className = "muted small";
+  info.textContent = `적 상태: ${monText}`;
+  $("#choices").appendChild(info);
+
+  const btn = document.createElement("button");
+  btn.className = "choiceBtn";
+  btn.textContent = "전투 1라운드 진행(자동)";
+  btn.onclick = combatRound;
+  $("#choices").appendChild(btn);
+
+  const flee = document.createElement("button");
+  flee.className = "choiceBtn";
+  flee.textContent = "도주 시도(성공 확률: 파티 평균 luck%)";
+  flee.onclick = () => {
+    const avgLuck = Math.round(state.party.reduce((a,m)=>a+(m.stats.luck??0),0) / Math.max(1,state.party.length));
+    const ok = chance(avgLuck);
+    if(ok){
+      logLine(`도주 성공! (확률 ${avgLuck}%)`);
+      state.combat.inCombat = false;
+      state.combat = null;
+      postEventAffinityTick();
+      goNextEvent();
+    }else{
+      logLine(`도주 실패… (확률 ${avgLuck}%)`);
+      // 실패 페널티: 몬스터 1회 공격
+      monstersAutoAttack();
+      renderAll();
+      renderCombatChoices();
+    }
+  };
+  $("#choices").appendChild(flee);
+}
+
+function renderEventChoicesAfterCombat(){
+  $("#choices").innerHTML = "";
+  const btn = document.createElement("button");
+  btn.className = "choiceBtn";
+  btn.textContent = "전투 종료 → 다음 이벤트로";
+  btn.onclick = () => {
+    postEventAffinityTick();
+    goNextEvent();
+  };
+  $("#choices").appendChild(btn);
+}
+
+function goNextEvent(){
+  // 전멸 체크
+  if(livingParty().length === 0){
     $("#choices").innerHTML = "";
-    appendLog("파티 전멸… 던전에서 쓰러졌다.");
+    logLine("파티 전멸… 던전에서 쓰러졌다.");
     const btn = document.createElement("button");
     btn.className = "primary";
     btn.textContent = "다시 도전";
@@ -687,20 +1241,18 @@ function resolveChoice(ev, ch){
     return;
   }
 
-  // 다음 이벤트/종료
   state.eventIndex += 1;
   if(state.eventIndex >= state.scenario.events.length){
     finishScenario();
   }else{
+    renderAll();
     renderEvent();
   }
 }
 
 function finishScenario(){
   $("#choices").innerHTML = "";
-  const gold = state.gold ?? 0;
-  const affSum = state.party.reduce((a,m)=>a+m.affinity,0);
-  appendLog(`던전 클리어! 최종: GOLD ${gold}, 총 호감도 ${affSum}`);
+  logLine(`던전 클리어! 최종 GOLD ${state.gold}`);
   const btn = document.createElement("button");
   btn.className = "primary";
   btn.textContent = "다시 시작";
@@ -708,38 +1260,145 @@ function finishScenario(){
   $("#choices").appendChild(btn);
 }
 
-function renderAllRunUI(){
-  renderStatus();
-  renderPartyRunList();
-  renderInventory();
-  renderSkills();
+// ---------- Affinity Threshold Events ----------
+function formatScript(tpl, vars){
+  return tpl.replace(/\{(\w+)\}/g, (_,k)=> (vars[k] != null ? String(vars[k]) : `{${k}}`));
 }
 
-/** ===== Start / Reset ===== */
+function postEventAffinityTick(){
+  const cfg = state.data.scenarios.affinityThresholdEvents;
+  if(!cfg) return;
 
+  // for each pair, maybe trigger
+  for(let i=0;i<state.party.length;i++){
+    for(let j=i+1;j<state.party.length;j++){
+      const a = state.party[i], b = state.party[j];
+      const val = getPairAffinity(a.id,b.id);
+
+      if(val >= cfg.positive.min){
+        if(Math.random() < (cfg.positive.chancePerPair ?? 0)){
+          const hp = rndInt(1,3);
+          const mp = rndInt(1,3);
+          a.hp = clamp(a.hp + hp, 0, a.maxHp);
+          b.hp = clamp(b.hp + hp, 0, b.maxHp);
+          a.mp = clamp(a.mp + mp, 0, a.maxMp);
+          b.mp = clamp(b.mp + mp, 0, b.maxMp);
+
+          const tpl = pick(cfg.positive.scripts ?? ["{a}와(과) {b}가 서로를 북돋운다."]);
+          logLine(formatScript(tpl, { a:a.name, b:b.name, hp, mp }));
+        }
+      }else if(val <= cfg.negative.max){
+        if(Math.random() < (cfg.negative.chancePerPair ?? 0)){
+          const hp = rndInt(1,3);
+          const mp = rndInt(1,3);
+          a.hp = clamp(a.hp - hp, 0, a.maxHp);
+          b.hp = clamp(b.hp - hp, 0, b.maxHp);
+          a.mp = clamp(a.mp - mp, 0, a.maxMp);
+          b.mp = clamp(b.mp - mp, 0, b.maxMp);
+
+          const tpl = pick(cfg.negative.scripts ?? ["{a}와(과) {b}의 사이가 험악해진다."]);
+          logLine(formatScript(tpl, { a:a.name, b:b.name, hp, mp }));
+        }
+      }
+    }
+  }
+}
+
+// ---------- Save/Load ----------
+function serialize(){
+  return {
+    party: state.party,
+    pairAffinity: state.pairAffinity,
+    scenario: state.scenario,
+    eventIndex: state.eventIndex,
+    inventory: state.inventory,
+    gold: state.gold,
+    logHTML: $("#log").innerHTML
+  };
+}
+function hydrate(obj){
+  state.party = obj.party ?? [];
+  state.pairAffinity = obj.pairAffinity ?? {};
+  state.scenario = obj.scenario ?? null;
+  state.eventIndex = obj.eventIndex ?? 0;
+  state.inventory = obj.inventory ?? [];
+  state.gold = obj.gold ?? 0;
+
+  $("#log").innerHTML = obj.logHTML ?? "";
+}
+
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(serialize()));
+    alert("세이브 완료!");
+  }catch(e){
+    console.error(e);
+    alert("세이브 실패(브라우저 저장소 문제)");
+  }
+}
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){
+      alert("세이브 데이터가 없습니다.");
+      return;
+    }
+    const obj = JSON.parse(raw);
+    hydrate(obj);
+
+    // 화면 상태 복구
+    if(state.scenario){
+      $("#setupCard").classList.add("hidden");
+      $("#runCard").classList.remove("hidden");
+      $("#scenarioTitle").textContent = state.scenario.title;
+      $("#scenarioDesc").textContent = state.scenario.description;
+      renderAll();
+      renderEvent();
+      alert("로드 완료!");
+    }else{
+      $("#setupCard").classList.remove("hidden");
+      $("#runCard").classList.add("hidden");
+      renderPartyPreview();
+      alert("로드 완료!(파티만)");
+    }
+  }catch(e){
+    console.error(e);
+    alert("로드 실패(데이터 손상)");
+  }
+}
+function wipeSave(){
+  localStorage.removeItem(SAVE_KEY);
+  alert("세이브 삭제 완료!");
+}
+
+// ---------- Start / Reset ----------
 function startRun(){
   if(state.party.length === 0){
     alert("파티원이 최소 1명 필요합니다.");
     return;
   }
 
-  // 초기 인벤토리(샘플)
-  state.inventory = [{ itemId: "hp_potion", qty: 2 }];
-  state.gold = 0;
+  // 기본 인벤토리 샘플(테스트)
+  state.inventory = [
+    { itemId:"hp_potion", qty:2 },
+    { itemId:"mp_potion", qty:1 }
+  ];
+  state.gold = 30;
 
-  const scenarios = state.data.scenarios.scenarios;
-  state.scenario = pickRandom(scenarios);
+  state.scenario = pick(state.data.scenarios.scenarios);
   state.eventIndex = 0;
+  state.combat = null;
 
   $("#setupCard").classList.add("hidden");
   $("#runCard").classList.remove("hidden");
 
   $("#scenarioTitle").textContent = state.scenario.title;
   $("#scenarioDesc").textContent = state.scenario.description;
-  $("#log").innerHTML = "";
-  appendLog(`시나리오 시작: ${state.scenario.title}`);
 
-  renderAllRunUI();
+  $("#log").innerHTML = "";
+  logLine(`시나리오 시작: ${state.scenario.title}`);
+
+  renderAll();
   renderEvent();
 }
 
@@ -748,14 +1407,15 @@ function resetAll(){
   state.eventIndex = 0;
   state.inventory = [];
   state.gold = 0;
+  state.combat = null;
 
   $("#setupCard").classList.remove("hidden");
   $("#runCard").classList.add("hidden");
   $("#log").innerHTML = "";
+  renderPartyPreview();
 }
 
-/** ===== Init ===== */
-
+// ---------- Init ----------
 async function init(){
   state.data.jobs = await loadJSON("./data/jobs.json");
   state.data.scenarios = await loadJSON("./data/scenarios.json");
@@ -771,6 +1431,7 @@ async function init(){
   $("#addMemberBtn").onclick = addOrUpdateMember;
   $("#clearPartyBtn").onclick = () => {
     state.party = [];
+    initPairAffinities();
     renderPartyPreview();
     resetMemberForm();
   };
@@ -779,8 +1440,17 @@ async function init(){
   $("#resetBtn").onclick = resetAll;
 
   $("#modalClose").onclick = closeModal;
-  $("#modal").addEventListener("click", (e)=>{
-    if(e.target.id === "modal") closeModal();
+  $("#modal").addEventListener("click", (e)=>{ if(e.target.id === "modal") closeModal(); });
+
+  // save/load
+  $("#saveBtn").onclick = saveGame;
+  $("#loadBtn").onclick = loadGame;
+  $("#wipeSaveBtn").onclick = wipeSave;
+
+  // actor select change: update recommend text
+  $("#actorSelect").addEventListener("change", ()=>{
+    const idx = Number($("#actorSelect").value || "0");
+    $("#recommendText").textContent = `선택 행동자: ${state.party[idx]?.name ?? ""}`;
   });
 }
 
