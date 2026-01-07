@@ -6,62 +6,67 @@
   <title>Dungeon Party Simulator</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <header class="header">
-    <div class="headerInner">
-      <div>
-        <h1>Dungeon Party Simulator</h1>
-        <p class="sub">중세 판타지 던전 · 파티 시뮬레이터</p>
-      </div>
-      <div class="headerBtns">
-        <button class="ghost" id="saveBtn">세이브</button>
-        <button class="ghost" id="loadBtn">로드</button>
-        <button class="ghost" id="wipeSaveBtn">세이브 삭제</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="container">
-    <!-- SETUP -->
-    <section class="card" id="setupCard">
-      <div class="topline">
+  <div class="container">
+    <header class="card" style="margin-bottom:16px;">
+      <div class="row">
         <div>
-          <h2>파티 생성</h2>
-          <p class="muted">캐릭터 최대 4명까지 추가 가능</p>
+          <h1 style="margin:0;">Dungeon Party Simulator</h1>
+          <div class="subtitle">깊은 던전으로 향하는 모험</div>
         </div>
-        <button class="ghost" id="clearPartyBtn">파티 초기화</button>
-      </div>
-
-      <div class="partyList" id="partyPreview"></div>
-
-      <hr />
-
-      <h3>캐릭터 추가/수정</h3>
-
-      <div class="grid">
-        <label>
-          이름
-          <input id="nameInput" placeholder="예: 아르덴" maxlength="16" />
-        </label>
-
-        <label>
-          계열
-          <select id="categorySelect"></select>
-        </label>
-
-        <label>
-          직업
-          <select id="jobSelect"></select>
-        </label>
-      </div>
-
-      <div class="traits">
-        <div class="rowBetween">
-          <h3>성격 키워드 3개</h3>
-          <span class="hint">중복 선택 불가 (자동 갱신)</span>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+          <button class="ghost" id="saveBtn" type="button">세이브</button>
+          <button class="ghost" id="loadBtn" type="button">로드</button>
+          <button class="ghost" id="wipeSaveBtn" type="button">세이브 삭제</button>
         </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <!-- SETUP -->
+      <section class="card" id="setupCard">
+        <div class="row">
+          <div>
+            <h2 style="margin:0 0 4px;">파티 생성</h2>
+            <div class="muted">캐릭터 최대 4명까지 추가 가능</div>
+          </div>
+          <button class="ghost" id="clearPartyBtn" type="button">파티 초기화</button>
+        </div>
+
+        <div class="partyList" id="partyPreview"></div>
+
+        <hr />
+
+        <h3 style="margin:0 0 10px;">캐릭터 추가/수정</h3>
 
         <div class="grid">
+          <label>
+            이름
+            <input id="nameInput" placeholder="예: 아르덴" maxlength="16" />
+          </label>
+
+          <label>
+            계열
+            <select id="categorySelect"></select>
+          </label>
+
+          <label>
+            직업
+            <select id="jobSelect"></select>
+          </label>
+        </div>
+
+        <hr />
+
+        <div class="row" style="align-items:flex-end;">
+          <div>
+            <h3 style="margin:0 0 4px;">성격 키워드 3개</h3>
+            <div class="muted small">중복 선택 불가 (자동 갱신)</div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:8px;">
           <label>
             키워드 1
             <select id="traitSel1"></select>
@@ -75,110 +80,131 @@
             <select id="traitSel3"></select>
           </label>
         </div>
-      </div>
 
-      <div class="actionsRow">
-        <button class="secondary" id="addMemberBtn">파티원 추가(최대 4)</button>
-        <button class="primary" id="startBtn">던전 입장</button>
-      </div>
-
-      <p class="hint" style="margin-top:10px;">
-        데이터 수정은 <code>/data/*.json</code>에서!
-      </p>
-    </section>
-
-    <!-- RUN -->
-    <section class="card hidden" id="runCard">
-      <div class="topline">
-        <div>
-          <h2 id="scenarioTitle"></h2>
-          <p class="muted" id="scenarioDesc"></p>
+        <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+          <button class="secondary" id="addMemberBtn" type="button">파티원 추가(최대 4)</button>
+          <button class="primary" id="startBtn" type="button">던전 입장</button>
         </div>
-        <div style="display:flex; gap:10px;">
-          <button id="resetBtn" class="ghost">리셋</button>
+
+        <div class="muted small" style="margin-top:10px;">
+          데이터 수정은 <code>/data/*.json</code>에서!
         </div>
-      </div>
+      </section>
 
-      <div class="layout">
-        <!-- LEFT -->
-        <div class="leftPane">
-          <div class="status" id="statusBar"></div>
-
-          <div class="panel">
-            <div class="rowBetween">
-              <h3>파티</h3>
-              <span class="muted small">평균 호감도/상태 표시</span>
-            </div>
-            <div id="partyRunList" class="partyRunList"></div>
-
-            <div class="divider"></div>
-
-            <div class="rowBetween">
-              <h3>호감도(페어)</h3>
-              <span class="muted small">임계치 이벤트: ≥50 / ≤-50</span>
-            </div>
-            <div id="affinityPairs" class="affPairs"></div>
+      <!-- RUN -->
+      <section class="card hidden" id="runCard">
+        <div class="row">
+          <div>
+            <h2 style="margin:0 0 4px;" id="scenarioTitle"></h2>
+            <div class="muted" id="scenarioDesc"></div>
           </div>
-
-          <div class="panel">
-            <div class="rowBetween">
-              <h3>인벤토리</h3>
-              <span class="muted small">아이템 클릭 → 대상 선택</span>
-            </div>
-            <div id="inventoryList" class="inventory"></div>
-          </div>
-
-          <div class="panel">
-            <div class="rowBetween">
-              <h3>스킬</h3>
-              <span class="muted small">액티브: MP 1 소모</span>
-            </div>
-            <div id="skillsList" class="skills"></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+            <button id="resetBtn" class="ghost" type="button">리셋</button>
           </div>
         </div>
 
-        <!-- RIGHT -->
-        <div class="rightPane">
-          <div class="rowBetween">
-            <div>
-              <h3 id="eventTitle"></h3>
-              <p id="eventText"></p>
+        <hr />
+
+        <div class="grid" style="grid-template-columns: 1.05fr 0.95fr;">
+          <!-- LEFT -->
+          <div>
+            <div id="statusBar" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;"></div>
+
+            <div class="card" style="box-shadow:none;">
+              <div class="row">
+                <div>
+                  <h3 style="margin:0 0 4px;">파티</h3>
+                  <div class="muted small">평균 호감도/상태 표시</div>
+                </div>
+              </div>
+              <div id="partyRunList" class="partyRunList"></div>
+
+              <hr />
+
+              <div class="row">
+                <div>
+                  <h3 style="margin:0 0 4px;">호감도(페어)</h3>
+                  <div class="muted small">임계치 이벤트: ≥50 / ≤-50</div>
+                </div>
+              </div>
+              <div id="affinityPairs" class="affPairs"></div>
             </div>
-            <div class="badge" id="eventTypeBadge"></div>
+
+            <div class="card" style="box-shadow:none; margin-top:14px;">
+              <div class="row">
+                <div>
+                  <h3 style="margin:0 0 4px;">인벤토리</h3>
+                  <div class="muted small">아이템 클릭 → 대상 선택</div>
+                </div>
+              </div>
+              <div id="inventoryList" class="inventory"></div>
+            </div>
+
+            <div class="card" style="box-shadow:none; margin-top:14px;">
+              <div class="row">
+                <div>
+                  <h3 style="margin:0 0 4px;">스킬</h3>
+                  <div class="muted small">액티브: MP 1 소모</div>
+                </div>
+              </div>
+              <div id="skillsList" class="skills"></div>
+            </div>
           </div>
 
-          <div class="inlineControls">
-            <label class="inlineLabel">
-              이번 이벤트 행동자
-              <select id="actorSelect"></select>
-            </label>
-            <div class="muted small" id="recommendText"></div>
+          <!-- RIGHT -->
+          <div>
+            <div class="card" style="box-shadow:none;">
+              <div class="row" style="align-items:flex-start;">
+                <div>
+                  <h3 style="margin:0 0 6px;" id="eventTitle"></h3>
+                  <div id="eventText"></div>
+                </div>
+                <div class="badge" id="eventTypeBadge"></div>
+              </div>
+
+              <hr />
+
+              <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                <label style="margin:0; flex: 1 1 260px;">
+                  이번 이벤트 행동자
+                  <select id="actorSelect"></select>
+                </label>
+                <div class="muted small" id="recommendText" style="min-width: 180px;"></div>
+              </div>
+
+              <div id="choices" class="choices" style="margin-top:10px;"></div>
+
+              <hr />
+
+              <div id="log" class="log"></div>
+            </div>
           </div>
-
-          <div class="choices" id="choices"></div>
-
-          <div class="log" id="log"></div>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
 
-  <!-- MODAL -->
-  <div class="modal hidden" id="modal">
-    <div class="modalCard">
-      <div class="rowBetween">
-        <h3 id="modalTitle">대상 선택</h3>
-        <button class="ghost" id="modalClose">닫기</button>
+    <!-- MODAL -->
+    <!-- ★ 기본은 무조건 hidden: display:none !important 로 숨기기 -->
+    <div class="modal hidden" id="modal" aria-hidden="true">
+      <div class="modalPanel">
+        <div class="modalHeader">
+          <div>
+            <div class="modalTitle" id="modalTitle">대상 선택</div>
+            <div class="modalDesc" id="modalDesc"></div>
+          </div>
+          <button class="ghost" id="modalClose" type="button">닫기</button>
+        </div>
+
+        <div id="modalBody" style="margin-top:10px;"></div>
       </div>
-      <p class="muted" id="modalDesc"></p>
-      <div id="modalBody" class="modalBody"></div>
     </div>
+
+    <footer class="muted small" style="margin-top:16px; text-align:center;">
+      Warm UI · Party · Save/Load · Combat · Items · Skills · Status Effects
+    </footer>
   </div>
 
-  <footer class="footer">
-    <span class="muted">Warm UI · Party · Save/Load · Combat · Items · Skills · Status Effects</span>
-  </footer>
-
+  <!-- JS -->
   <script src="app.js"></script>
 </body>
 </html>
