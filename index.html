@@ -8,7 +8,17 @@
 </head>
 <body>
   <header class="header">
-    <h1>Dungeon Party Simulator</h1>깊은 던전의 끝을 향하다<p class="sub">pp
+    <div class="headerInner">
+      <div>
+        <h1>Dungeon Party Simulator</h1>
+        <p class="sub">중세 판타지 던전 · 파티 시뮬레이터</p>
+      </div>
+      <div class="headerBtns">
+        <button class="ghost" id="saveBtn">세이브</button>
+        <button class="ghost" id="loadBtn">로드</button>
+        <button class="ghost" id="wipeSaveBtn">세이브 삭제</button>
+      </div>
+    </div>
   </header>
 
   <main class="container">
@@ -72,7 +82,9 @@
         <button class="primary" id="startBtn">던전 입장</button>
       </div>
 
-    
+      <p class="hint" style="margin-top:10px;">
+        데이터 수정은 <code>/data/*.json</code>에서!
+      </p>
     </section>
 
     <!-- RUN -->
@@ -82,7 +94,9 @@
           <h2 id="scenarioTitle"></h2>
           <p class="muted" id="scenarioDesc"></p>
         </div>
-        <button id="resetBtn" class="ghost">리셋</button>
+        <div style="display:flex; gap:10px;">
+          <button id="resetBtn" class="ghost">리셋</button>
+        </div>
       </div>
 
       <div class="layout">
@@ -93,9 +107,17 @@
           <div class="panel">
             <div class="rowBetween">
               <h3>파티</h3>
-              <span class="muted small">행동자 선택 후 이벤트 진행</span>
+              <span class="muted small">평균 호감도/상태 표시</span>
             </div>
             <div id="partyRunList" class="partyRunList"></div>
+
+            <div class="divider"></div>
+
+            <div class="rowBetween">
+              <h3>호감도(페어)</h3>
+              <span class="muted small">임계치 이벤트: ≥50 / ≤-50</span>
+            </div>
+            <div id="affinityPairs" class="affPairs"></div>
           </div>
 
           <div class="panel">
@@ -109,7 +131,7 @@
           <div class="panel">
             <div class="rowBetween">
               <h3>스킬</h3>
-              <span class="muted small">액티브 스킬: 대상 선택</span>
+              <span class="muted small">액티브: MP 1 소모</span>
             </div>
             <div id="skillsList" class="skills"></div>
           </div>
@@ -117,14 +139,20 @@
 
         <!-- RIGHT -->
         <div class="rightPane">
-          <h3 id="eventTitle"></h3>
-          <p id="eventText"></p>
+          <div class="rowBetween">
+            <div>
+              <h3 id="eventTitle"></h3>
+              <p id="eventText"></p>
+            </div>
+            <div class="badge" id="eventTypeBadge"></div>
+          </div>
 
           <div class="inlineControls">
             <label class="inlineLabel">
               이번 이벤트 행동자
               <select id="actorSelect"></select>
             </label>
+            <div class="muted small" id="recommendText"></div>
           </div>
 
           <div class="choices" id="choices"></div>
@@ -148,7 +176,7 @@
   </div>
 
   <footer class="footer">
-    <span class="muted">Warm UI · Party · Items · Skills · Status Effects</span>
+    <span class="muted">Warm UI · Party · Save/Load · Combat · Items · Skills · Status Effects</span>
   </footer>
 
   <script src="app.js"></script>
