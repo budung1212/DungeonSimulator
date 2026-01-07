@@ -3,8 +3,19 @@
     "hp_potion": {
       "id": "hp_potion",
       "name": "HP포션",
-      "description": "사용 시 HP 5 회복. 많이 마시면 중독의 위험이 있다.",
-      "tags": ["소모품", "회복", "포션"]
+      "description": "사용 시 HP 5 회복. 1% 확률로 '포션중독' 부여(중독 시 포션 회복 불가).",
+      "type": "consumable",
+      "target": "ally",
+      "effects": { "hp": 5 },
+      "extra": { "applyStatus": "potion_addiction", "chance": 0.01, "blockIfHasStatus": "potion_addiction" }
+    },
+    "mp_potion": {
+      "id": "mp_potion",
+      "name": "MP포션",
+      "description": "사용 시 MP 3 회복.",
+      "type": "consumable",
+      "target": "ally",
+      "effects": { "mp": 3 }
     }
   }
 }
