@@ -3,8 +3,8 @@
     "potion_addiction": {
       "id": "potion_addiction",
       "name": "포션중독",
-      "description": "포션으로 회복 불가능한 상태이상. '정화' 스킬로 치료 가능.",
-      "tags": ["디버프", "치료불가", "정화가능"]
+      "description": "포션으로 HP 회복 불가. '정화'로 치료 가능.",
+      "tags": ["디버프","치료불가","정화가능"]
     }
   }
 }
