@@ -4,24 +4,29 @@
       "id": "warrior",
       "name": "전사계열",
       "jobs": [
-        { "id": "knight", "name": "기사", "base": { "hp": 14, "atk": 6, "mag": 1, "luck": 1 } },
-        { "id": "berserker", "name": "광전사", "base": { "hp": 16, "atk": 7, "mag": 0, "luck": 0 } }
+        { "id": "shield_knight", "name": "방패 기사", "base": { "hp": 20, "mp": 5, "atk": 4, "mag": 3, "def": 8, "luck": 1 } },
+        { "id": "axe_thrower", "name": "도끼 투사", "base": { "hp": 15, "mp": 5, "atk": 8, "mag": 0, "def": 4, "luck": 3 } },
+        { "id": "greatsword_warrior", "name": "대검 전사", "base": { "hp": 18, "mp": 5, "atk": 6, "mag": 1, "def": 5, "luck": 2 } },
+        { "id": "mace_paladin", "name": "둔기 성기사", "base": { "hp": 14, "mp": 6, "atk": 3, "mag": 5, "def": 6, "luck": 2 } }
       ]
     },
     {
       "id": "mage",
-      "name": "마법계열",
+      "name": "마법 계열",
       "jobs": [
-        { "id": "wizard", "name": "마도사", "base": { "hp": 9, "atk": 2, "mag": 8, "luck": 1 } },
-        { "id": "cleric", "name": "성직자", "base": { "hp": 11, "atk": 2, "mag": 6, "luck": 2 } }
+        { "id": "pyromancer", "name": "화염술사", "base": { "hp": 10, "mp": 8, "atk": 5, "mag": 8, "def": 0, "luck": 3 } },
+        { "id": "elementalist", "name": "정령술사", "base": { "hp": 12, "mp": 6, "atk": 3, "mag": 5, "def": 4, "luck": 2 } },
+        { "id": "stormcaller", "name": "뇌전술사", "base": { "hp": 8, "mp": 12, "atk": 10, "mag": 9, "def": 0, "luck": 5 } },
+        { "id": "priest", "name": "성직자", "base": { "hp": 15, "mp": 6, "atk": 3, "mag": 8, "def": 4, "luck": 2 } }
       ]
     },
     {
       "id": "special",
-      "name": "기타 특수계열",
+      "name": "특수 계열",
       "jobs": [
-        { "id": "assassin", "name": "암살자", "base": { "hp": 10, "atk": 5, "mag": 1, "luck": 4 } },
-        { "id": "bard", "name": "음유시인", "base": { "hp": 10, "atk": 2, "mag": 3, "luck": 6 } }
+        { "id": "hermit", "name": "은둔자", "base": { "hp": 10, "mp": 5, "atk": 4, "mag": 2, "def": 2, "luck": 10 } },
+        { "id": "bard", "name": "음유시인", "base": { "hp": 18, "mp": 5, "atk": 2, "mag": 1, "def": 2, "luck": 10 } },
+        { "id": "dungeon_expert", "name": "던전 전문가", "base": { "hp": 15, "mp": 5, "atk": 5, "mag": 3, "def": 4, "luck": 10 } }
       ]
     }
   ]
