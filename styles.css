@@ -1,484 +1,451 @@
-:root{
-  --bg: #f4efe6;
-  --surface: #fbf8f2;
-  --surface-2: #f1eadf;
-  --border: #d7c8b3;
-  --text: #2f2a24;
-  --muted: #6d6257;
-  --accent: #8a6b43;
-  --accent-2: #6f5636;
-  --danger: #8b4a3d;
-  --shadow: 0 10px 30px rgba(47,42,36,.08);
-  --radius: 14px;
+/* -------------------------------------------
+   Fonts
+   - 안정적으로 쓰려면 폰트 파일을 repo에 포함시키는 방식 추천
+   - ./assets/fonts/HeirofLight-Regular.ttf
+   - ./assets/fonts/HeirofLight-Bold.ttf
+------------------------------------------- */
+@font-face{
+  font-family: "HeirofLight";
+  src: url("./assets/fonts/HeirofLight-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face{
+  font-family: "HeirofLight";
+  src: url("./assets/fonts/HeirofLight-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
-*{ box-sizing:border-box; }
-html, body{ height:100%; }
+/* -------------------------------------------
+   Base
+------------------------------------------- */
+:root{
+  --bg: #f3efe7;
+  --card: #f7f4ee;
+  --ink: #2a2722;
+  --muted: #6f675b;
+  --line: #d7cfbf;
+  --line2:#cbbfa9;
+
+  --accent:#7a6342;       /* 던전 진입 버튼 */
+  --accent2:#6a573b;      /* hover */
+  --shadow: 0 18px 40px rgba(0,0,0,.12);
+
+  --radius: 18px;
+  --radius2: 14px;
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
 body{
   margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif;
+}
+
+h1,h2,h3{ margin:0; }
+p{ margin:6px 0 0; }
+code{
+  background: rgba(0,0,0,.06);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+/* -------------------------------------------
+   Header
+------------------------------------------- */
+.header{
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: rgba(243,239,231,.86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(203,191,169,.6);
+}
+
+.headerInner{
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand{ display:flex; align-items:center; }
+.brandLogo{
+  /* 1) 로고 크게 */
+  height: 52px;
+  width: auto;
+  display:block;
+}
+
+.headerBtns{
+  display:flex;
+  gap: 10px;
+}
+
+/* -------------------------------------------
+   Layout containers
+------------------------------------------- */
+.container{
+  max-width: 1180px;
+  margin: 18px auto 26px;
+  padding: 0 18px;
+}
+
+.card{
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.06);
 }
 
 .hidden{ display:none !important; }
 
-.container{
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 18px 16px 36px;
+/* -------------------------------------------
+   Intro parchment
+------------------------------------------- */
+.introParchment{
+  border-radius: var(--radius);
+  border: 1px solid var(--line2);
+  overflow: hidden;
+  height: 124px;
+  background-image: url("./assets/parchment.png");
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  margin-bottom: 14px;
 }
 
-.card{
-  background: var(--surface);
-  border: 1px solid var(--border);
+/* 2) 가운데 정렬 + 명조 느낌(HeirofLight) + 글자 살짝 작게 */
+.introText{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px 18px;
+  text-align: center;
+
+  font-family: "HeirofLight", serif;
+  font-weight: 700;
+  font-size: 22px; /* 기존보다 2pt 정도 낮춘 느낌 */
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+
+  color: #2a261f;
+  text-shadow: 0 1px 0 rgba(255,255,255,.35);
+}
+
+/* -------------------------------------------
+   Setup party panel
+------------------------------------------- */
+.setupRow{
+  display:flex;
+  gap: 14px;
+}
+
+.partyPanel{
+  width: 100%;
+  border: 1px solid var(--line2);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   padding: 14px;
+  background: rgba(255,255,255,.35);
+}
+
+.partyPanelHead{
+  display:flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.panelTitle{ font-size: 22px; letter-spacing: -0.4px; }
+
+.partySlots{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* party slot / card (app.js가 그려주는 markup에 유연하게 적용) */
+.partySlot{
+  border: 1px solid var(--line2);
+  border-radius: var(--radius2);
+  background: rgba(247,244,238,.8);
+  padding: 14px;
+  min-height: 110px;
+}
+
+/* empty slot button */
+.slotAddBtn{
+  width: 100%;
+  min-height: 110px;
+  border-radius: var(--radius2);
+  border: 1px dashed rgba(122,99,66,.45);
+  background: rgba(0,0,0,.03);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease;
+}
+.slotAddBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(0,0,0,.05);
+}
+
+.setupBottom{
+  display:flex;
+  justify-content:center;
+  margin-top: 16px;
+}
+
+/* 4) 하단 단독 던전 진입 버튼 */
+.enterBtn{
+  min-width: 220px;
+  padding: 14px 18px;
+  border-radius: 14px;
+}
+
+/* -------------------------------------------
+   Buttons / small text
+------------------------------------------- */
+button{
+  font: inherit;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+button.ghost{
+  background: rgba(255,255,255,.25);
+}
+button.ghost:hover{
+  background: rgba(255,255,255,.38);
+}
+
+button.primary{
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 900;
+}
+button.primary:hover{
+  background: var(--accent2);
+}
+button.secondary{
+  background: rgba(0,0,0,.06);
 }
 
 .muted{ color: var(--muted); }
 .small{ font-size: 12px; }
 
-h2{ margin:0; }
-h3{ margin:0; }
-
-code{
-  background: rgba(47,42,36,.06);
-  border: 1px solid rgba(47,42,36,.12);
-  border-radius: 8px;
-  padding: 2px 6px;
-}
-
-button{
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text);
-  padding: 10px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: transform .06s ease, background .15s ease, border-color .15s ease;
-}
-button:hover{
-  background: #efe6d8;
-  border-color: rgba(138,107,67,.55);
-}
-button:active{ transform: translateY(1px); }
-
-button.primary{
-  background: var(--accent);
-  color: #fff;
-  border-color: rgba(0,0,0,.08);
-}
-button.primary:hover{ background: var(--accent-2); }
-
-button.ghost{
-  background: transparent;
-  border-color: rgba(138,107,67,.35);
-}
-button.ghost:hover{ background: rgba(138,107,67,.10); }
-
-.rowBetween{
+/* -------------------------------------------
+   Run layout (기존 유지)
+------------------------------------------- */
+.topline{
   display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-/* ---------- TOPBAR ---------- */
-.topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: rgba(251,248,242,.85);
-  box-shadow: var(--shadow);
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  min-height: 56px;
-}
-
-.logoImg{
-  height: 54px;
-  width: auto;
-  display:block;
-  filter: drop-shadow(0 6px 10px rgba(47,42,36,.12));
-}
-
-.topbarBtns{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content:flex-end;
-}
-
-/* ---------- SETUP ---------- */
-.setupCard{ padding: 14px; }
-
-.introBox{
-  border-radius: 18px;
-  border: 1px solid rgba(215,200,179,.85);
-  min-height: 140px;
-  background: #f6efe2;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 12px 30px rgba(47,42,36,.10);
-}
-
-.introBox::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
-  opacity: .95;
-  /* 실제 이미지는 JS에서 #introBox.style.backgroundImage 로 넣음 */
-}
-
-.introText{
-  position: relative;
-  z-index: 1;
-  padding: 22px 20px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
-  font-size: 22px;
-  color: #3a332b;
-  text-shadow: 0 1px 0 rgba(255,255,255,.35);
-}
-
-.setupBottom{
-  margin-top: 14px;
-  display:grid;
-  grid-template-columns: 1fr 260px;
-  gap: 14px;
-}
-@media (max-width: 900px){
-  .setupBottom{ grid-template-columns: 1fr; }
-}
-
-.partyPanel{
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: rgba(251,248,242,.8);
-  padding: 12px;
-}
-
-.partyHeader{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.sectionTitle{
-  margin:0 0 4px;
-  font-size: 20px;
-}
-
-.partyGrid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 640px){
-  .partyGrid{ grid-template-columns: 1fr; }
-}
-
-.partySlot{
-  border-radius: 16px;
-  border: 1px solid rgba(215,200,179,.9);
-  background: var(--surface);
-  padding: 12px;
-  min-height: 116px;
-  box-shadow: 0 10px 22px rgba(47,42,36,.08);
-  position: relative;
-}
-
-.slotTop{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 10px;
-}
-
-.delBtn{
-  border: 1px solid rgba(139,74,61,.35);
-  color: var(--danger);
-  background: transparent;
-  padding: 6px 10px;
-  border-radius: 12px;
-}
-.delBtn:hover{
-  background: rgba(139,74,61,.10);
-  border-color: rgba(139,74,61,.55);
-}
-
-.partyRow{
-  display:flex;
-  gap: 12px;
-  align-items:center;
-}
-
-.portrait{
-  width: 62px;
-  height: 62px;
-  border-radius: 14px;
-  border: 1px solid rgba(215,200,179,.9);
-  background: #fff;
-  object-fit: cover;
-  box-shadow: 0 8px 16px rgba(47,42,36,.10);
-  flex: 0 0 auto;
-}
-
-.memberName{
-  font-weight: 900;
-  font-size: 16px;
-  margin: 0 0 2px;
-}
-
-.memberSub{
-  color: var(--muted);
-  font-size: 12px;
-  margin:0;
-}
-
-.memberTraits{
-  margin-top: 6px;
-  display:flex;
-  flex-wrap:wrap;
-  gap: 6px;
-}
-
-.traitPill{
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(47,42,36,.06);
-  border: 1px solid rgba(47,42,36,.12);
-}
-
-.addSlotBtn{
-  width: 100%;
-  height: 100%;
-  min-height: 92px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap: 10px;
-  font-weight: 900;
-  font-size: 16px;
-  background: rgba(138,107,67,.08);
-  border: 1px dashed rgba(138,107,67,.55);
-  border-radius: 14px;
-}
-.addSlotBtn:hover{
-  background: rgba(138,107,67,.12);
-}
-
-.enterPanel{
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: rgba(251,248,242,.8);
-  padding: 14px;
-  display:flex;
-  flex-direction: column;
-  justify-content:center;
-}
-
-.enterBtn{
-  width: 100%;
-  padding: 14px 14px;
-  border-radius: 16px;
-  font-size: 18px;
-  font-weight: 900;
-  background: var(--accent);
-  color: #fff;
-  border-color: rgba(0,0,0,.08);
-}
-.enterBtn:hover{ background: var(--accent-2); }
-
-/* ---------- RUN UI (기존 스타일 유지용 최소) ---------- */
 .layout{
   display:grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 420px 1fr;
   gap: 14px;
   margin-top: 12px;
 }
-@media (max-width: 980px){
-  .layout{ grid-template-columns: 1fr; }
+
+.leftPane, .rightPane{
+  display:flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .panel{
-  background: rgba(251,248,242,.8);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line2);
   border-radius: var(--radius);
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 14px;
+  background: rgba(255,255,255,.35);
+}
+
+.rowBetween{
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .divider{
-  height: 1px;
-  background: var(--border);
+  height:1px;
+  background: rgba(203,191,169,.8);
   margin: 12px 0;
-}
-
-.badge{
-  display:inline-flex;
-  gap: 6px;
-  align-items:center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(138,107,67,.10);
-  border: 1px solid rgba(138,107,67,.22);
-  font-weight: 800;
 }
 
 .status{
   display:flex;
   gap: 10px;
-  flex-wrap:wrap;
-  margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 .pill{
-  display:inline-flex;
-  gap: 6px;
-  align-items:center;
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.35);
   padding: 8px 10px;
   border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  font-size: 13px;
 }
 
-.partyRunItem, .partyCard, .affPair{
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
-  margin-top: 10px;
-}
-
-.tags{
-  display:flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.tag{
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(47,42,36,.06);
-  border: 1px solid rgba(47,42,36,.12);
-}
-
-.itemBtn, .skillBtn, .targetBtn, .choiceBtn{
-  width: 100%;
-  text-align:left;
-  margin-top: 10px;
-  background: var(--surface);
-}
-
-.log{
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,.6);
-  min-height: 110px;
-}
-
-/* ---------- MODAL ---------- */
-.modal{
-  position: fixed;
-  inset: 0;
-  background: rgba(47,42,36,.35);
-  display:flex;
+.badge{
+  display:inline-flex;
   align-items:center;
-  justify-content:center;
-  padding: 18px;
-  z-index: 9999;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.38);
+  font-size: 12px;
 }
 
-.modalPanel{
-  width: min(760px, 100%);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: 0 18px 50px rgba(0,0,0,.18);
-  padding: 14px;
-}
-
-.modalHeader{
+.partyRunList, .affPairs, .inventory, .skills{
   display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
+  flex-direction: column;
   gap: 10px;
 }
 
-.modalTitle{
-  font-size: 16px;
-  font-weight: 900;
+.partyRunItem, .affPair{
+  border: 1px solid rgba(203,191,169,.85);
+  background: rgba(247,244,238,.7);
+  border-radius: 14px;
+  padding: 10px 12px;
 }
-.modalDesc{
-  color: var(--muted);
+
+.tags{ display:flex; gap:8px; flex-wrap: wrap; margin-top: 8px; }
+.tag{
+  border: 1px solid rgba(203,191,169,.9);
+  background: rgba(255,255,255,.35);
+  border-radius: 999px;
+  padding: 5px 10px;
   font-size: 12px;
-  margin-top: 4px;
 }
 
-.modalForm{ margin-top: 10px; }
+.inlineControls{
+  display:flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+.inlineLabel{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+}
+select, input{
+  border: 1px solid rgba(203,191,169,.95);
+  background: rgba(255,255,255,.55);
+  border-radius: 14px;
+  padding: 10px 12px;
+  outline: none;
+}
+select:focus, input:focus{
+  box-shadow: 0 0 0 4px rgba(122,99,66,.18);
+}
 
-.grid2{
+.choices{ display:flex; flex-direction: column; gap: 10px; }
+.choiceBtn{
+  text-align:left;
+  border-radius: 14px;
+  padding: 12px 12px;
+  background: rgba(0,0,0,.03);
+}
+.choiceBtn:hover{ background: rgba(0,0,0,.05); }
+
+.log{
+  border: 1px solid rgba(203,191,169,.85);
+  background: rgba(255,255,255,.38);
+  border-radius: var(--radius);
+  padding: 12px;
+  min-height: 120px;
+  line-height: 1.55;
+}
+
+/* -------------------------------------------
+   Modal
+------------------------------------------- */
+.modal{
+  position: fixed;
+  inset: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,.26);
+  z-index: 80;
+}
+.modalCard{
+  width: min(720px, calc(100vw - 28px));
+  background: #fbf9f5;
+  border: 1px solid rgba(203,191,169,.95);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.modalWide{ width: min(860px, calc(100vw - 28px)); }
+
+.modalBody{ display:flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+.modalForm{ margin-top: 12px; display:flex; flex-direction: column; gap: 14px; }
+.modalSection{ display:flex; flex-direction: column; gap: 8px; }
+.modalLabel{ font-weight: 900; }
+
+.modalRow2{
   display:grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
-@media (max-width: 760px){
-  .grid2{ grid-template-columns: 1fr; }
-}
-.grid3{
+.modalRow3{
   display:grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 760px){
-  .grid3{ grid-template-columns: 1fr; }
+  gap: 10px;
 }
 
-label{
-  display:block;
-  font-weight: 800;
-  color: var(--text);
-}
-
-input, select{
-  width: 100%;
-  padding: 10px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  outline: none;
-  margin-top: 6px;
-}
-input:focus, select:focus{
-  border-color: rgba(138,107,67,.75);
-  box-shadow: 0 0 0 4px rgba(138,107,67,.12);
-}
+.field{ display:flex; flex-direction: column; gap: 6px; }
 
 .modalActions{
   display:flex;
   justify-content:flex-end;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 4px;
+}
+
+.footer{
+  max-width: 1180px;
+  margin: 12px auto 24px;
+  padding: 0 18px;
+  text-align:center;
+  font-size: 12px;
+}
+
+/* -------------------------------------------
+   Responsive
+------------------------------------------- */
+@media (max-width: 980px){
+  .layout{ grid-template-columns: 1fr; }
+  .partySlots{ grid-template-columns: 1fr; }
+  .introText{ font-size: 20px; }
+  .brandLogo{ height: 46px; }
+  .modalRow3{ grid-template-columns: 1fr; }
 }
