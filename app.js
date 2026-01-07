@@ -268,7 +268,8 @@ function createMemberFromForm(){
 }
 
 function addOrUpdateMember(){
-  const editing = $("#addMemberBtn").dataset.editing;
+  const editing = ($("#addMemberBtn").dataset.editing || ""); 
+
   if(editing === "" && state.party.length >= 4){
     alert("파티는 최대 4명까지입니다.");
     return;
@@ -276,7 +277,7 @@ function addOrUpdateMember(){
 
   const member = createMemberFromForm();
 
-  if(editing !== ""){
+  if(editing){ 
     const idx = Number(editing);
     const old = state.party[idx];
     state.party[idx] = member;
@@ -292,6 +293,7 @@ function addOrUpdateMember(){
   renderPartyPreview();
   resetMemberForm();
 }
+
 
 // ---------- Status handling ----------
 function hasStatus(m, sid){ return (m.statuses ?? []).includes(sid); }
@@ -1404,6 +1406,7 @@ async function init(){
   buildJobUI();
   buildTraitDropdowns();
   renderPartyPreview();
+  resetMemberForm();
 
   $("#addMemberBtn").onclick = addOrUpdateMember;
   $("#clearPartyBtn").onclick = () => {
