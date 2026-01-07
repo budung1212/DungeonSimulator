@@ -1,0 +1,28 @@
+{
+  "categories": [
+    {
+      "id": "warrior",
+      "name": "전사계열",
+      "jobs": [
+        { "id": "knight", "name": "기사", "base": { "hp": 14, "atk": 6, "mag": 1, "luck": 1 } },
+        { "id": "berserker", "name": "광전사", "base": { "hp": 16, "atk": 7, "mag": 0, "luck": 0 } }
+      ]
+    },
+    {
+      "id": "mage",
+      "name": "마법계열",
+      "jobs": [
+        { "id": "wizard", "name": "마도사", "base": { "hp": 9, "atk": 2, "mag": 8, "luck": 1 } },
+        { "id": "cleric", "name": "성직자", "base": { "hp": 11, "atk": 2, "mag": 6, "luck": 2 } }
+      ]
+    },
+    {
+      "id": "special",
+      "name": "기타 특수계열",
+      "jobs": [
+        { "id": "assassin", "name": "암살자", "base": { "hp": 10, "atk": 5, "mag": 1, "luck": 4 } },
+        { "id": "bard", "name": "음유시인", "base": { "hp": 10, "atk": 2, "mag": 3, "luck": 6 } }
+      ]
+    }
+  ]
+}
