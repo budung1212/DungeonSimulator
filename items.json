@@ -1,0 +1,10 @@
+{
+  "definitions": {
+    "hp_potion": {
+      "id": "hp_potion",
+      "name": "HP포션",
+      "description": "사용 시 HP 5 회복. 많이 마시면 중독의 위험이 있다.",
+      "tags": ["소모품", "회복", "포션"]
+    }
+  }
+}
