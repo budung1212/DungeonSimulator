@@ -1,307 +1,281 @@
-/* -------------------------------------------
-   Fonts
-   - 안정적으로 쓰려면 폰트 파일을 repo에 포함시키는 방식 추천
-   - ./assets/fonts/HeirofLight-Regular.ttf
-   - ./assets/fonts/HeirofLight-Bold.ttf
-------------------------------------------- */
-@font-face{
-  font-family: "HeirofLight";
-  src: url("./assets/fonts/HeirofLight-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face{
-  font-family: "HeirofLight";
-  src: url("./assets/fonts/HeirofLight-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* -------------------------------------------
-   Base
-------------------------------------------- */
 :root{
-  --bg: #f3efe7;
-  --card: #f7f4ee;
-  --ink: #2a2722;
-  --muted: #6f675b;
-  --line: #d7cfbf;
-  --line2:#cbbfa9;
-
-  --accent:#7a6342;       /* 던전 진입 버튼 */
-  --accent2:#6a573b;      /* hover */
-  --shadow: 0 18px 40px rgba(0,0,0,.12);
-
+  --bg: #f6f2ea;
+  --card: #fbf8f2;
+  --line: #cbbfa9;
+  --line2: rgba(203,191,169,.55);
+  --text: #2b2a28;
+  --muted: rgba(43,42,40,.68);
+  --accent: #7a6545;
+  --accent2:#6d5a3f;
+  --shadow: 0 18px 40px rgba(0,0,0,.06);
   --radius: 18px;
-  --radius2: 14px;
 }
 
-*{ box-sizing: border-box; }
-html,body{ height:100%; }
+*{ box-sizing:border-box; }
 body{
   margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
   background: var(--bg);
-  color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif;
+  color: var(--text);
 }
-
-h1,h2,h3{ margin:0; }
-p{ margin:6px 0 0; }
-code{
-  background: rgba(0,0,0,.06);
-  padding: 1px 6px;
-  border-radius: 8px;
-}
-
-/* -------------------------------------------
-   Header
-------------------------------------------- */
-.header{
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background: rgba(243,239,231,.86);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(203,191,169,.6);
-}
-
-.headerInner{
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.brand{ display:flex; align-items:center; }
-.brandLogo{
-  /* 1) 로고 크게 */
-  height: 52px;
-  width: auto;
-  display:block;
-}
-
-.headerBtns{
-  display:flex;
-  gap: 10px;
-}
-
-/* -------------------------------------------
-   Layout containers
-------------------------------------------- */
-.container{
-  max-width: 1180px;
-  margin: 18px auto 26px;
-  padding: 0 18px;
-}
-
-.card{
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px;
-  box-shadow: 0 10px 28px rgba(0,0,0,.06);
-}
-
-.hidden{ display:none !important; }
-
-/* -------------------------------------------
-   Intro parchment
-------------------------------------------- */
-.introParchment{
-  border-radius: var(--radius);
-  border: 1px solid var(--line2);
-  overflow: hidden;
-  height: 124px;
-  background-image: url("./assets/parchment.png");
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  margin-bottom: 14px;
-}
-
-/* 2) 가운데 정렬 + 명조 느낌(HeirofLight) + 글자 살짝 작게 */
-.introText{
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 16px 18px;
-  text-align: center;
-
-  font-family: "HeirofLight", serif;
-  font-weight: 700;
-  font-size: 22px; /* 기존보다 2pt 정도 낮춘 느낌 */
-  letter-spacing: -0.3px;
-  line-height: 1.15;
-
-  color: #2a261f;
-  text-shadow: 0 1px 0 rgba(255,255,255,.35);
-}
-
-/* -------------------------------------------
-   Setup party panel
-------------------------------------------- */
-.setupRow{
-  display:flex;
-  gap: 14px;
-}
-
-.partyPanel{
-  width: 100%;
-  border: 1px solid var(--line2);
-  border-radius: var(--radius);
-  padding: 14px;
-  background: rgba(255,255,255,.35);
-}
-
-.partyPanelHead{
-  display:flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 10px;
-}
-
-.panelTitle{ font-size: 22px; letter-spacing: -0.4px; }
-
-.partySlots{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-/* party slot / card (app.js가 그려주는 markup에 유연하게 적용) */
-.partySlot{
-  border: 1px solid var(--line2);
-  border-radius: var(--radius2);
-  background: rgba(247,244,238,.8);
-  padding: 14px;
-  min-height: 110px;
-}
-
-/* empty slot button */
-.slotAddBtn{
-  width: 100%;
-  min-height: 110px;
-  border-radius: var(--radius2);
-  border: 1px dashed rgba(122,99,66,.45);
-  background: rgba(0,0,0,.03);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap: 10px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform .12s ease, background .12s ease;
-}
-.slotAddBtn:hover{
-  transform: translateY(-1px);
-  background: rgba(0,0,0,.05);
-}
-
-.setupBottom{
-  display:flex;
-  justify-content:center;
-  margin-top: 16px;
-}
-
-/* 4) 하단 단독 던전 진입 버튼 */
-.enterBtn{
-  min-width: 220px;
-  padding: 14px 18px;
-  border-radius: 14px;
-}
-
-/* -------------------------------------------
-   Buttons / small text
-------------------------------------------- */
-button{
-  font: inherit;
-  border: 1px solid var(--line2);
-  border-radius: 14px;
-  padding: 10px 14px;
-  background: transparent;
-  cursor: pointer;
-  color: var(--ink);
-}
-
-button.ghost{
-  background: rgba(255,255,255,.25);
-}
-button.ghost:hover{
-  background: rgba(255,255,255,.38);
-}
-
-button.primary{
-  border-color: transparent;
-  background: var(--accent);
-  color: #fff;
-  font-weight: 900;
-}
-button.primary:hover{
-  background: var(--accent2);
-}
-button.secondary{
-  background: rgba(0,0,0,.06);
-}
-
+h1,h2,h3,p{ margin:0; }
 .muted{ color: var(--muted); }
 .small{ font-size: 12px; }
 
-/* -------------------------------------------
-   Run layout (기존 유지)
-------------------------------------------- */
-.topline{
-  display:flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
+.container{
+  width:min(1080px, calc(100% - 28px));
+  margin: 20px auto 28px;
 }
 
-.layout{
-  display:grid;
-  grid-template-columns: 420px 1fr;
-  gap: 14px;
-  margin-top: 12px;
+.header{
+  width:min(1080px, calc(100% - 28px));
+  margin: 18px auto 10px;
 }
-
-.leftPane, .rightPane{
-  display:flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.panel{
+.headerInner{
+  background: var(--card);
   border: 1px solid var(--line2);
   border-radius: var(--radius);
-  padding: 14px;
-  background: rgba(255,255,255,.35);
+  padding: 14px 18px;
+  box-shadow: var(--shadow);
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
-.rowBetween{
+/* 1) 로고 2배 크게 */
+.logoImg{
+  width: 360px;          /* 기존보다 크게(대략 2배 느낌) */
+  max-width: 72vw;       /* 모바일 대응 */
+  height: auto;
+  display:block;
+}
+
+/* 2) Save/Load 버튼 우상단 고정 */
+.saveDock{
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 9999;
   display:flex;
-  justify-content: space-between;
-  align-items: center;
+  gap:10px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(251,248,242,.82);
+  border: 1px solid var(--line2);
+  box-shadow: 0 10px 24px rgba(0,0,0,.07);
+  backdrop-filter: blur(6px);
+}
+
+/* cards */
+.card{
+  background: var(--card);
+  border: 1px solid var(--line2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+.hidden{ display:none !important; }
+
+.introCard{ margin-bottom: 14px; }
+.parchment{
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line2);
+  background: #eee;
+  height: 128px;
+}
+.parchmentImg{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+  display:block;
+}
+.parchmentText{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-family: "Noto Serif KR", serif; /* 웹폰트 적용 전이라도 명조 느낌 */
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.25;
+  color: rgba(43,42,40,.92);
+  text-shadow: 0 1px 0 rgba(255,255,255,.45);
+}
+
+.partyCard{
+  border: 1px solid var(--line2);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255,255,255,.22);
+}
+.partyTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 10px;
+}
+.partyTop h2{ font-size: 22px; }
+.partyTop p{ margin-top: 6px; }
+
+.partyGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.divider{
-  height:1px;
-  background: rgba(203,191,169,.8);
-  margin: 12px 0;
+/* slot */
+.partySlot{
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.28);
+  border-radius: 16px;
+  padding: 12px;
+  min-height: 130px;
 }
 
-.status{
+.slotAddBtn{
+  width:100%;
+  height: 100%;
+  min-height: 106px;
+  border-radius: 14px;
+  border: 1px dashed rgba(122,101,69,.35);
+  background: rgba(122,101,69,.06);
+  color: rgba(43,42,40,.86);
+  font-weight: 800;
   display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  cursor:pointer;
 }
+
+/* 3) 파티원 카드 레이아웃 */
+.slotCard{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between; /* 삭제 버튼 우측 */
+  gap: 12px;
+  cursor:pointer;
+}
+
+/* 왼쪽: 이미지 + 정보 */
+.slotLeft{
+  display:flex;
+  align-items:flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 3-1 이미지 영역 고정 */
+.portraitWrap{
+  width: 92px;
+  height: 92px;
+  border-radius: 16px;
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.35);
+  flex: 0 0 auto;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.portrait{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+}
+
+/* 3-2 오른쪽 정보 */
+.slotInfoText{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  align-items:flex-start;
+}
+.slotNameLine{
+  font-weight: 900;
+  font-size: 16px;
+}
+.slotMetaLine{
+  font-size: 12px;
+  color: var(--muted);
+}
+.slotStatLine{
+  font-size: 12px;
+  color: rgba(43,42,40,.82);
+}
+.slotSkillLine{
+  font-size: 12px;
+  color: rgba(43,42,40,.86);
+  display:-webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:hidden;
+}
+
+/* 3-3 삭제 버튼: 박스 내 우측 중앙 */
+.slotDelBtn{
+  align-self:center;
+  flex: 0 0 auto;
+}
+
+/* enter button bottom */
+.enterRow{
+  margin-top: 16px;
+  display:flex;
+  justify-content:center;
+}
+.bigEnter{
+  padding: 14px 34px;
+  font-size: 16px;
+  border-radius: 14px;
+}
+
+/* buttons */
+button{
+  font: inherit;
+}
+.ghost{
+  border-radius: 12px;
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.36);
+  padding: 10px 12px;
+  cursor:pointer;
+}
+.primary{
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor:pointer;
+}
+.primary:hover{ background: var(--accent2); }
+
+/* RUN layout 유지용 (너 기존 CSS랑 충돌 나면 여기만 남겨도 됨) */
+.topline{ display:flex; justify-content:space-between; gap:12px; }
+.layout{ display:grid; grid-template-columns: 1.05fr 1fr; gap:14px; margin-top: 12px; }
+.leftPane, .rightPane{ display:flex; flex-direction:column; gap:12px; }
+.panel{
+  border: 1px solid var(--line2);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255,255,255,.22);
+}
+.rowBetween{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.divider{ height:1px; background: var(--line2); margin: 10px 0; }
+.status{ display:flex; flex-wrap:wrap; gap:8px; }
 .pill{
   border: 1px solid var(--line2);
   background: rgba(255,255,255,.35);
@@ -309,143 +283,113 @@ button.secondary{
   border-radius: 999px;
   font-size: 13px;
 }
-
 .badge{
-  display:inline-flex;
-  align-items:center;
-  gap: 6px;
-  padding: 7px 10px;
-  border-radius: 999px;
   border: 1px solid var(--line2);
-  background: rgba(255,255,255,.38);
-  font-size: 12px;
-}
-
-.partyRunList, .affPairs, .inventory, .skills{
-  display:flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.partyRunItem, .affPair{
-  border: 1px solid rgba(203,191,169,.85);
-  background: rgba(247,244,238,.7);
-  border-radius: 14px;
-  padding: 10px 12px;
-}
-
-.tags{ display:flex; gap:8px; flex-wrap: wrap; margin-top: 8px; }
-.tag{
-  border: 1px solid rgba(203,191,169,.9);
   background: rgba(255,255,255,.35);
+  padding: 6px 10px;
   border-radius: 999px;
-  padding: 5px 10px;
   font-size: 12px;
 }
+.tag{
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.28);
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.tags{ display:flex; flex-wrap:wrap; gap:6px; }
+
+.partyRunItem{
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.20);
+  border-radius: 14px;
+  padding: 10px;
+}
+.affPair{
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.20);
+  border-radius: 14px;
+  padding: 10px;
+  margin-top: 8px;
+}
+.affVal.pos{ color: #2b6b3f; font-weight: 900; }
+.affVal.neg{ color: #8a2f2f; font-weight: 900; }
+
+.inventory, .skills{ display:flex; flex-direction:column; gap:8px; }
+.itemBtn, .skillBtn, .choiceBtn, .targetBtn{
+  width:100%;
+  text-align:left;
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,.28);
+  border-radius: 14px;
+  padding: 10px;
+  cursor:pointer;
+}
+.meta{ margin-top: 6px; font-size: 12px; color: var(--muted); }
 
 .inlineControls{
-  display:flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 12px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  background: rgba(255,255,255,.22);
+  padding: 10px;
 }
-.inlineLabel{
-  display:flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.inlineLabel{ display:flex; gap:10px; align-items:center; }
 select, input{
-  border: 1px solid rgba(203,191,169,.95);
-  background: rgba(255,255,255,.55);
-  border-radius: 14px;
+  width:100%;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
   padding: 10px 12px;
-  outline: none;
+  background: rgba(255,255,255,.55);
+  outline:none;
 }
-select:focus, input:focus{
-  box-shadow: 0 0 0 4px rgba(122,99,66,.18);
-}
-
-.choices{ display:flex; flex-direction: column; gap: 10px; }
-.choiceBtn{
-  text-align:left;
-  border-radius: 14px;
-  padding: 12px 12px;
-  background: rgba(0,0,0,.03);
-}
-.choiceBtn:hover{ background: rgba(0,0,0,.05); }
-
 .log{
-  border: 1px solid rgba(203,191,169,.85);
-  background: rgba(255,255,255,.38);
-  border-radius: var(--radius);
-  padding: 12px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  background: rgba(255,255,255,.22);
+  padding: 10px;
   min-height: 120px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.footer{
+  width:min(1080px, calc(100% - 28px));
+  margin: 16px auto 28px;
+  text-align:center;
 }
 
-/* -------------------------------------------
-   Modal
-------------------------------------------- */
+/* modals */
 .modal{
-  position: fixed;
-  inset: 0;
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.35);
   display:flex;
   align-items:center;
   justify-content:center;
-  background: rgba(0,0,0,.26);
-  z-index: 80;
+  padding: 18px;
+  z-index: 9998;
 }
 .modalCard{
-  width: min(720px, calc(100vw - 28px));
-  background: #fbf9f5;
-  border: 1px solid rgba(203,191,169,.95);
-  border-radius: 18px;
+  width: min(860px, 100%);
+  background: var(--card);
+  border: 1px solid var(--line2);
+  border-radius: 16px;
   box-shadow: var(--shadow);
-  padding: 16px;
+  padding: 14px;
 }
-.modalWide{ width: min(860px, calc(100vw - 28px)); }
+.modalWide{ width:min(900px, 100%); }
+.modalBody{ display:flex; flex-direction:column; gap:8px; margin-top: 10px; }
+.setupForm{ margin-top: 8px; }
+.grid{ display:grid; gap:10px; }
+.oneCol{ grid-template-columns: 1fr; }
+.twoCol{ grid-template-columns: 1fr 1fr; }
+.threeCol{ grid-template-columns: 1fr 1fr 1fr; }
+.actionsRow{ margin-top: 12px; display:flex; gap:10px; }
+.actionsRow.right{ justify-content:flex-end; }
 
-.modalBody{ display:flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-
-.modalForm{ margin-top: 12px; display:flex; flex-direction: column; gap: 14px; }
-.modalSection{ display:flex; flex-direction: column; gap: 8px; }
-.modalLabel{ font-weight: 900; }
-
-.modalRow2{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.modalRow3{
-  display:grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-}
-
-.field{ display:flex; flex-direction: column; gap: 6px; }
-
-.modalActions{
-  display:flex;
-  justify-content:flex-end;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.footer{
-  max-width: 1180px;
-  margin: 12px auto 24px;
-  padding: 0 18px;
-  text-align:center;
-  font-size: 12px;
-}
-
-/* -------------------------------------------
-   Responsive
-------------------------------------------- */
-@media (max-width: 980px){
+@media (max-width: 820px){
+  .partyGrid{ grid-template-columns: 1fr; }
   .layout{ grid-template-columns: 1fr; }
-  .partySlots{ grid-template-columns: 1fr; }
-  .introText{ font-size: 20px; }
-  .brandLogo{ height: 46px; }
-  .modalRow3{ grid-template-columns: 1fr; }
+  .logoImg{ width: 280px; }
+  .parchmentText{ font-size: 20px; padding: 0 12px; }
+  .threeCol{ grid-template-columns: 1fr; }
 }
