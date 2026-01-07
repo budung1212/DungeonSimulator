@@ -1,85 +1,148 @@
 {
+  "affinityThresholdEvents": {
+    "positive": {
+      "min": 50,
+      "chancePerPair": 0.25,
+      "scripts": [
+        "{a}와(과) {b}의 호흡이 완벽하다. 서로를 격려하며 HP +{hp}, MP +{mp}!",
+        "{a}가 {b}에게 물을 건네며 미소 짓는다. 둘 다 HP +{hp}, MP +{mp}."
+      ]
+    },
+    "negative": {
+      "max": -50,
+      "chancePerPair": 0.25,
+      "scripts": [
+        "{a}와(과) {b}의 말다툼이 번진다. 둘 다 HP -{hp}, MP -{mp}…",
+        "{a}가 {b}의 행동에 신경질을 낸다. 둘 다 HP -{hp}, MP -{mp}."
+      ]
+    }
+  },
+
   "scenarios": [
     {
-      "id": "crypt_of_ashes",
-      "title": "잿빛 지하묘지",
-      "description": "입구부터 재와 뼛가루가 흩날린다. 어둠 속에서 속삭임이 따라온다.",
+      "id": "ember_catacombs",
+      "title": "잿불 대성당 지하",
+      "description": "불탄 성당의 지하로 이어지는 계단. 재와 촛농, 그리고 금속성 울림이 따라온다.",
       "events": [
         {
-          "id": "bone_gate",
-          "title": "뼈문",
-          "text": "해골 장식의 문이 잠겨 있다. 잠금장치에는 룬이 새겨져 있다.",
-          "tags": ["퍼즐", "마법", "침착"],
-          "traitBias": {
-            "preferred": ["침착", "호기심"],
-            "conflict": ["충동적"]
-          },
+          "id": "entry_oath",
+          "type": "story",
+          "title": "입구의 맹세",
+          "text": "바닥에 새겨진 서약문. 읽고 지나가면 축복이, 무시하면 저주가 따른다는 소문이 있다.",
+          "tags": ["도덕","침착"],
+          "traitBias": { "preferred": ["정의감","신중"], "conflict": ["충동적","욕심"] },
           "choices": [
             {
-              "id": "analyze",
-              "label": "룬을 해석해 안전하게 연다",
-              "check": { "stat": "mag", "dc": 12 },
-              "success": {
-                "log": "룬이 풀리며 문이 조용히 열린다.",
-                "effects": { "gold": 15, "affinity": 6, "hp": 0 }
-              },
-              "fail": {
-                "log": "룬이 역류해 손끝이 타들어간다.",
-                "effects": { "gold": 0, "affinity": -4, "hp": -3 }
-              }
+              "label": "서약문을 천천히 읽고 따르며 들어간다",
+              "check": { "stat": "mag", "dc": 11 },
+              "success": { "log": "서약문이 빛나며 길이 열렸다.", "effects": { "mp": 1 } },
+              "fail": { "log": "문구가 흐려지고 머리가 어지럽다.", "effects": { "hp": -2 } }
             },
             {
-              "id": "force",
-              "label": "힘으로 부순다",
-              "check": { "stat": "atk", "dc": 12 },
-              "success": {
-                "log": "문이 산산조각! 안쪽 통로가 드러난다.",
-                "effects": { "gold": 5, "affinity": 2, "hp": -1 }
-              },
-              "fail": {
-                "log": "충격에 문이 버티고, 파편이 튄다.",
-                "effects": { "gold": 0, "affinity": -2, "hp": -4 }
-              }
+              "label": "대충 훑고 그냥 들어간다",
+              "check": { "stat": "luck", "dc": 10 },
+              "success": { "log": "아무 일도 없다… 운이 좋았다.", "effects": { "gold": 10 } },
+              "fail": { "log": "잔불이 튀어 화상을 입었다.", "effects": { "hp": -3 } }
             }
           ]
         },
+
         {
-          "id": "lost_priest",
-          "title": "길 잃은 성직자",
-          "text": "부상당한 성직자가 벽에 기대어 있다. 치료를 요청한다.",
-          "tags": ["도움", "도덕", "이타적"],
-          "traitBias": {
-            "preferred": ["이타적", "정의감"],
-            "conflict": ["욕심", "실리적"]
-          },
+          "id": "puzzle_brazier",
+          "type": "event",
+          "title": "불꽃의 화로 퍼즐",
+          "text": "화로 3개가 서로 다른 색으로 흔들린다. 올바른 순서로 손을 대면 문이 열린다.",
+          "tags": ["퍼즐","장치","침착"],
+          "traitBias": { "preferred": ["침착","호기심","신중"], "conflict": ["충동적"] },
           "choices": [
             {
-              "id": "help",
-              "label": "치료하고 함께 이동한다",
-              "check": { "stat": "luck", "dc": 10 },
-              "success": {
-                "log": "성직자가 감사의 표식(축복)을 건넨다.",
-                "effects": { "gold": 0, "affinity": 10, "hp": 2, "blessing": 1 }
-              },
-              "fail": {
-                "log": "치료 중 괴물이 습격해 혼란이 생긴다.",
-                "effects": { "gold": 0, "affinity": 2, "hp": -2 }
-              }
+              "label": "규칙을 추론해 순서대로 작동시킨다",
+              "check": { "stat": "mag", "dc": 12 },
+              "success": { "log": "문이 열리고 숨겨진 금화를 발견했다.", "effects": { "gold": 25 } },
+              "fail": { "log": "역화! 손이 그을렸다.", "effects": { "hp": -3 } }
             },
             {
-              "id": "ignore",
-              "label": "위험하니 지나친다",
-              "check": { "stat": "luck", "dc": 8 },
-              "success": {
-                "log": "무사히 지나쳤다. 하지만 찜찜함이 남는다.",
-                "effects": { "gold": 10, "affinity": -6, "hp": 0 }
-              },
-              "fail": {
-                "log": "성직자의 비명이 던전에 울려 괴물이 몰려온다.",
-                "effects": { "gold": 0, "affinity": -10, "hp": -3 }
-              }
+              "label": "힘으로 뜯어낸다",
+              "check": { "stat": "atk", "dc": 12 },
+              "success": { "log": "쇳소리가 울리며 문이 부서졌다.", "effects": { "hp": -1, "gold": 5 } },
+              "fail": { "log": "충격에 파편이 튀어 상처를 입었다.", "effects": { "hp": -4 } }
             }
           ]
+        },
+
+        {
+          "id": "combat_skeletons",
+          "type": "combat",
+          "title": "해골 순찰대",
+          "text": "철갑 해골들이 칼을 들고 다가온다.",
+          "tags": ["전투","언데드"],
+          "combat": {
+            "monsters": [
+              { "id": "sk1", "name": "해골 병사", "hp": 18, "mp": 0, "atk": 5, "mag": 0, "def": 2, "luck": 1 },
+              { "id": "sk2", "name": "해골 병사", "hp": 18, "mp": 0, "atk": 5, "mag": 0, "def": 2, "luck": 1 }
+            ],
+            "reward": {
+              "gold": 30,
+              "items": [{ "itemId": "hp_potion", "qty": 1 }]
+            }
+          }
+        },
+
+        {
+          "id": "rest_nook",
+          "type": "rest",
+          "title": "쉼터",
+          "text": "무너진 벽 뒤 작은 공간. 잠깐 쉬면 숨이 돌아온다.",
+          "tags": ["휴식"],
+          "rest": { "hp": 3, "mp": 2 }
+        },
+
+        {
+          "id": "merchant",
+          "type": "shop",
+          "title": "떠돌이 상인",
+          "text": "상인이 웃으며 포션을 내민다. '싼값에 드리지!'",
+          "tags": ["상점","협상"],
+          "shop": {
+            "offers": [
+              { "itemId": "hp_potion", "price": 20 },
+              { "itemId": "mp_potion", "price": 25 }
+            ]
+          }
+        },
+
+        {
+          "id": "combat_wraith",
+          "type": "combat",
+          "title": "잿불 망령",
+          "text": "재로 만든 망령이 공중에서 형체를 바꾼다.",
+          "tags": ["전투","마법"],
+          "combat": {
+            "monsters": [
+              { "id": "wr1", "name": "잿불 망령", "hp": 28, "mp": 0, "atk": 3, "mag": 6, "def": 1, "luck": 2 }
+            ],
+            "reward": {
+              "gold": 40,
+              "items": [{ "itemId": "mp_potion", "qty": 1 }]
+            }
+          }
+        },
+
+        {
+          "id": "boss_cinder_knight",
+          "type": "combat",
+          "title": "보스: 잿불의 기사",
+          "text": "타버린 갑옷이 삐걱이며 검을 들어 올린다. 이곳의 수호자다.",
+          "tags": ["전투","보스"],
+          "combat": {
+            "monsters": [
+              { "id": "bk", "name": "잿불의 기사", "hp": 65, "mp": 0, "atk": 8, "mag": 4, "def": 5, "luck": 2 }
+            ],
+            "reward": {
+              "gold": 100,
+              "items": [{ "itemId": "hp_potion", "qty": 2 }, { "itemId": "mp_potion", "qty": 1 }]
+            }
+          }
         }
       ]
     }
