@@ -1,8 +1,77 @@
-dungeon-sim/
-  index.html
-  styles.css
-  app.js
-  data/
-    jobs.json
-    scenarios.json
-    traits.json
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dungeon Scenario Simulator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>Dungeon Scenario Simulator</h1>
+    <p class="sub">중세 판타지 던전 시뮬레이터 (GitHub Pages)</p>
+  </header>
+
+  <main class="container">
+    <section class="card" id="setupCard">
+      <h2>캐릭터 생성</h2>
+
+      <div class="grid">
+        <label>
+          이름
+          <input id="nameInput" placeholder="예: 아르덴" maxlength="16" />
+        </label>
+
+        <label>
+          계열
+          <select id="categorySelect"></select>
+        </label>
+
+        <label>
+          직업
+          <select id="jobSelect"></select>
+        </label>
+      </div>
+
+      <div class="traits">
+        <h3>성격 키워드 3개</h3>
+        <div class="grid">
+          <input id="trait1" placeholder="예: 정의감" />
+          <input id="trait2" placeholder="예: 침착" />
+          <input id="trait3" placeholder="예: 호기심" />
+        </div>
+        <p class="hint">키워드 풀은 data/traits.json에서 수정 가능</p>
+      </div>
+
+      <button class="primary" id="startBtn">던전 입장</button>
+    </section>
+
+    <section class="card hidden" id="runCard">
+      <div class="topline">
+        <div>
+          <h2 id="scenarioTitle"></h2>
+          <p class="muted" id="scenarioDesc"></p>
+        </div>
+        <button id="resetBtn" class="ghost">리셋</button>
+      </div>
+
+      <div class="status" id="statusBar"></div>
+
+      <hr />
+
+      <h3 id="eventTitle"></h3>
+      <p id="eventText"></p>
+
+      <div class="choices" id="choices"></div>
+
+      <div class="log" id="log"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="muted">Custom data: /data/*.json</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
