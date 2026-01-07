@@ -1,0 +1,87 @@
+{
+  "scenarios": [
+    {
+      "id": "crypt_of_ashes",
+      "title": "잿빛 지하묘지",
+      "description": "입구부터 재와 뼛가루가 흩날린다. 어둠 속에서 속삭임이 따라온다.",
+      "events": [
+        {
+          "id": "bone_gate",
+          "title": "뼈문",
+          "text": "해골 장식의 문이 잠겨 있다. 잠금장치에는 룬이 새겨져 있다.",
+          "tags": ["퍼즐", "마법", "침착"],
+          "traitBias": {
+            "preferred": ["침착", "호기심"],
+            "conflict": ["충동적"]
+          },
+          "choices": [
+            {
+              "id": "analyze",
+              "label": "룬을 해석해 안전하게 연다",
+              "check": { "stat": "mag", "dc": 12 },
+              "success": {
+                "log": "룬이 풀리며 문이 조용히 열린다.",
+                "effects": { "gold": 15, "affinity": 6, "hp": 0 }
+              },
+              "fail": {
+                "log": "룬이 역류해 손끝이 타들어간다.",
+                "effects": { "gold": 0, "affinity": -4, "hp": -3 }
+              }
+            },
+            {
+              "id": "force",
+              "label": "힘으로 부순다",
+              "check": { "stat": "atk", "dc": 12 },
+              "success": {
+                "log": "문이 산산조각! 안쪽 통로가 드러난다.",
+                "effects": { "gold": 5, "affinity": 2, "hp": -1 }
+              },
+              "fail": {
+                "log": "충격에 문이 버티고, 파편이 튄다.",
+                "effects": { "gold": 0, "affinity": -2, "hp": -4 }
+              }
+            }
+          ]
+        },
+        {
+          "id": "lost_priest",
+          "title": "길 잃은 성직자",
+          "text": "부상당한 성직자가 벽에 기대어 있다. 치료를 요청한다.",
+          "tags": ["도움", "도덕", "이타적"],
+          "traitBias": {
+            "preferred": ["이타적", "정의감"],
+            "conflict": ["욕심", "실리적"]
+          },
+          "choices": [
+            {
+              "id": "help",
+              "label": "치료하고 함께 이동한다",
+              "check": { "stat": "luck", "dc": 10 },
+              "success": {
+                "log": "성직자가 감사의 표식(축복)을 건넨다.",
+                "effects": { "gold": 0, "affinity": 10, "hp": 2, "blessing": 1 }
+              },
+              "fail": {
+                "log": "치료 중 괴물이 습격해 혼란이 생긴다.",
+                "effects": { "gold": 0, "affinity": 2, "hp": -2 }
+              }
+            },
+            {
+              "id": "ignore",
+              "label": "위험하니 지나친다",
+              "check": { "stat": "luck", "dc": 8 },
+              "success": {
+                "log": "무사히 지나쳤다. 하지만 찜찜함이 남는다.",
+                "effects": { "gold": 10, "affinity": -6, "hp": 0 }
+              },
+              "fail": {
+                "log": "성직자의 비명이 던전에 울려 괴물이 몰려온다.",
+                "effects": { "gold": 0, "affinity": -10, "hp": -3 }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
