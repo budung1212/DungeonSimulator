@@ -1,0 +1,54 @@
+{
+  "definitions": {
+    "guard": {
+      "id": "guard",
+      "name": "방어",
+      "type": "active",
+      "description": "대상에게 다음 피해 -1 보호를 부여한다."
+    },
+    "fireball": {
+      "id": "fireball",
+      "name": "파이어볼",
+      "type": "active",
+      "description": "시전자는 다음 마법 판정에 +2 보너스를 얻는다."
+    },
+    "heal": {
+      "id": "heal",
+      "name": "치유",
+      "type": "active",
+      "description": "대상의 HP를 4 회복한다. (포션중독 상태여도 가능)"
+    },
+    "purify": {
+      "id": "purify",
+      "name": "정화",
+      "type": "active",
+      "description": "대상의 상태이상 '포션중독'을 제거한다."
+    },
+
+    "steel_mind": {
+      "id": "steel_mind",
+      "name": "강철의 정신",
+      "type": "passive",
+      "description": "침착/퍼즐 계열 이벤트에서 ATK 판정 +1.",
+      "condition": { "eventTagsAny": ["침착", "퍼즐"] },
+      "bonus": { "atk": 1 }
+    },
+    "arcane_knowledge": {
+      "id": "arcane_knowledge",
+      "name": "비전 지식",
+      "type": "passive",
+      "description": "마법/룬 이벤트에서 MAG 판정 +1.",
+      "condition": { "eventTagsAny": ["마법", "룬", "퍼즐"] },
+      "bonus": { "mag": 1 }
+    }
+  },
+
+  "jobSkillMap": {
+    "knight":     { "active": ["guard"],    "passive": ["steel_mind"] },
+    "berserker":  { "active": ["guard"],    "passive": [] },
+    "wizard":     { "active": ["fireball"], "passive": ["arcane_knowledge"] },
+    "cleric":     { "active": ["heal", "purify"], "passive": [] },
+    "assassin":   { "active": [], "passive": [] },
+    "bard":       { "active": [], "passive": [] }
+  }
+}
