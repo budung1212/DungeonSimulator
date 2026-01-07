@@ -3,18 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dungeon Scenario Simulator</title>
+  <title>Dungeon Party Simulator</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="header">
-    <h1>Dungeon Scenario Simulator</h1>
-    <p class="sub">던전 시뮬레이터 (GitHub Pages)</p>
+    <h1>Dungeon Party Simulator</h1>깊은 던전의 끝을 향하다<p class="sub">pp
   </header>
 
   <main class="container">
+    <!-- SETUP -->
     <section class="card" id="setupCard">
-      <h2>캐릭터 생성</h2>
+      <div class="topline">
+        <div>
+          <h2>파티 생성</h2>
+          <p class="muted">캐릭터 최대 4명까지 추가 가능</p>
+        </div>
+        <button class="ghost" id="clearPartyBtn">파티 초기화</button>
+      </div>
+
+      <div class="partyList" id="partyPreview"></div>
+
+      <hr />
+
+      <h3>캐릭터 추가/수정</h3>
 
       <div class="grid">
         <label>
@@ -34,18 +46,36 @@
       </div>
 
       <div class="traits">
-        <h3>성격 키워드 3개</h3>
-        <div class="grid">
-          <input id="trait1" placeholder="예: 정의감" />
-          <input id="trait2" placeholder="예: 침착" />
-          <input id="trait3" placeholder="예: 호기심" />
+        <div class="rowBetween">
+          <h3>성격 키워드 3개</h3>
+          <span class="hint">중복 선택 불가 (자동 갱신)</span>
         </div>
-        <p class="hint">키워드 풀은 data/traits.json에서 수정 가능</p>
+
+        <div class="grid">
+          <label>
+            키워드 1
+            <select id="traitSel1"></select>
+          </label>
+          <label>
+            키워드 2
+            <select id="traitSel2"></select>
+          </label>
+          <label>
+            키워드 3
+            <select id="traitSel3"></select>
+          </label>
+        </div>
       </div>
 
-      <button class="primary" id="startBtn">던전 입장</button>
+      <div class="actionsRow">
+        <button class="secondary" id="addMemberBtn">파티원 추가(최대 4)</button>
+        <button class="primary" id="startBtn">던전 입장</button>
+      </div>
+
+    
     </section>
 
+    <!-- RUN -->
     <section class="card hidden" id="runCard">
       <div class="topline">
         <div>
@@ -55,21 +85,70 @@
         <button id="resetBtn" class="ghost">리셋</button>
       </div>
 
-      <div class="status" id="statusBar"></div>
+      <div class="layout">
+        <!-- LEFT -->
+        <div class="leftPane">
+          <div class="status" id="statusBar"></div>
 
-      <hr />
+          <div class="panel">
+            <div class="rowBetween">
+              <h3>파티</h3>
+              <span class="muted small">행동자 선택 후 이벤트 진행</span>
+            </div>
+            <div id="partyRunList" class="partyRunList"></div>
+          </div>
 
-      <h3 id="eventTitle"></h3>
-      <p id="eventText"></p>
+          <div class="panel">
+            <div class="rowBetween">
+              <h3>인벤토리</h3>
+              <span class="muted small">아이템 클릭 → 대상 선택</span>
+            </div>
+            <div id="inventoryList" class="inventory"></div>
+          </div>
 
-      <div class="choices" id="choices"></div>
+          <div class="panel">
+            <div class="rowBetween">
+              <h3>스킬</h3>
+              <span class="muted small">액티브 스킬: 대상 선택</span>
+            </div>
+            <div id="skillsList" class="skills"></div>
+          </div>
+        </div>
 
-      <div class="log" id="log"></div>
+        <!-- RIGHT -->
+        <div class="rightPane">
+          <h3 id="eventTitle"></h3>
+          <p id="eventText"></p>
+
+          <div class="inlineControls">
+            <label class="inlineLabel">
+              이번 이벤트 행동자
+              <select id="actorSelect"></select>
+            </label>
+          </div>
+
+          <div class="choices" id="choices"></div>
+
+          <div class="log" id="log"></div>
+        </div>
+      </div>
     </section>
   </main>
 
+  <!-- MODAL -->
+  <div class="modal hidden" id="modal">
+    <div class="modalCard">
+      <div class="rowBetween">
+        <h3 id="modalTitle">대상 선택</h3>
+        <button class="ghost" id="modalClose">닫기</button>
+      </div>
+      <p class="muted" id="modalDesc"></p>
+      <div id="modalBody" class="modalBody"></div>
+    </div>
+  </div>
+
   <footer class="footer">
-    <span class="muted">Custom data: /data/*.json</span>
+    <span class="muted">Warm UI · Party · Items · Skills · Status Effects</span>
   </footer>
 
   <script src="app.js"></script>
