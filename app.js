@@ -301,36 +301,38 @@ function renderPartySlots() {
 
     const m = state.party[i];
     if (!m) {
-      const btn = document.createElement("button");
-      btn.className = "slotAddBtn";
-      btn.type = "button";
-      btn.innerHTML = `<span style="font-size:22px; font-weight:900;">＋</span> <span>파티원 추가</span>`;
-      btn.onclick = () => {
-        if (state.party.length >= 4) {
-          alert("파티는 최대 4명까지입니다.");
-          return;
-        }
-        openSetupModal("new");
-      };
-      slot.appendChild(btn);
-    } else {
-      slot.innerHTML = `
-        <div class="slotCard">
-          <div class="slotTop">
-            <div class="slotInfo">
-              <img class="portrait" src="${esc(portraitFor(m.jobId))}" alt="portrait" />
-              <div class="slotText">
-                <div class="slotName">${esc(m.name)}</div>
-                <div class="slotSub muted small">${esc(m.jobName)}</div>
+      const defs = state.data.skills?.definitions ?? {};
+      const allSkillIds = [
+          ...(m.skills?.active ?? []),
+          ...(m.skills?.passive ?? [])
+          ];
+
+        // "직업 스킬 이름: 설명"은 너무 길어질 수 있어서 1~2개만 표시 추천
+      const showSkillIds = allSkillIds.slice(0, 2);
+      const skillLines = showSkillIds
+          .map(id => defs[id])
+          .filter(Boolean)
+          .map(s => `<div class="slotSkillLine"><b>${esc(s.name)}</b>: ${esc(s.description)}</div>`)
+          .join("");
+
+        slot.innerHTML = `
+          <div class="slotCard">
+            <div class="slotLeft">
+              <div class="portraitWrap">
+                <img class="portrait" src="${esc(portraitFor(m.jobId))}" alt="portrait"/>
+              </div>
+
+              <div class="slotInfoText">
+                <div class="slotNameLine">${esc(m.name)} <span class="muted">(${esc(m.jobName)})</span></div>
+                <div class="slotMetaLine">성격 : ${esc((m.traits || []).join(", ") || "없음")}</div>
+                <div class="slotStatLine">HP: ${m.hp}/${m.maxHp}, &nbsp; MP: ${m.mp}/${m.maxMp}</div>
+                ${skillLines || `<div class="slotSkillLine muted">직업 스킬: 없음</div>`}
               </div>
             </div>
+
             <button class="ghost slotDelBtn" data-del="${i}" type="button">삭제</button>
           </div>
-          <div class="slotMeta muted small">
-            성격: ${esc((m.traits || []).join(", ") || "없음")}
-          </div>
-        </div>
-      `;
+        `;
 
       // 카드 클릭 시 편집(삭제 버튼 제외)
       slot.querySelector(".slotCard")?.addEventListener("click", (e) => {
