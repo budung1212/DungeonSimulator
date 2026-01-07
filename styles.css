@@ -10,10 +10,10 @@
 
   --accent:#ff8a3d;
   --accent2:#ffa85e;
+
   --good:#59e0a2;
   --bad:#ff6a6a;
 
-  --btn:#ff8a3d;
   --btn2:#4a2a16;
 }
 
@@ -29,9 +29,18 @@ body{
     linear-gradient(180deg, var(--bg0), var(--bg1));
 }
 
-.header{padding:28px 18px 10px; text-align:center;}
+.header{padding:22px 18px 10px;}
+.headerInner{
+  max-width:1100px;
+  margin:0 auto;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
 .header h1{margin:0; font-size:22px; letter-spacing:.2px;}
 .sub{margin:6px 0 0; color:var(--muted); font-size:13px;}
+.headerBtns{display:flex; gap:10px; flex-wrap:wrap;}
 
 .container{max-width:1100px; margin:0 auto; padding:14px 18px 24px;}
 .card{
@@ -45,6 +54,7 @@ body{
 .hidden{display:none;}
 .muted{color:var(--muted);}
 .small{font-size:12px;}
+.hint{color:var(--muted); font-size:12px;}
 
 .grid{
   display:grid;
@@ -105,6 +115,7 @@ code{
   color:var(--text);
   cursor:pointer;
 }
+.ghost:hover, .secondary:hover, .primary:hover{filter:brightness(1.06);}
 
 .actionsRow{
   display:grid;
@@ -117,6 +128,7 @@ code{
 }
 
 hr{border:0; border-top:1px solid var(--line); margin:14px 0;}
+.divider{height:1px; background:var(--line); margin:12px 0;}
 
 .status{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
 .pill{
@@ -129,9 +141,22 @@ hr{border:0; border-top:1px solid var(--line); margin:14px 0;}
 }
 .pill b{color:var(--text);}
 
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background: rgba(0,0,0,.15);
+  color:var(--muted);
+  font-size:12px;
+}
+.badge b{color:var(--text);}
+
 .layout{
   display:grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: 460px 1fr;
   gap:14px;
   margin-top:12px;
 }
@@ -164,18 +189,6 @@ hr{border:0; border-top:1px solid var(--line); margin:14px 0;}
   gap:10px;
   align-items:center;
 }
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  background: rgba(0,0,0,.15);
-  color:var(--muted);
-  font-size:12px;
-}
-.badge b{color:var(--text);}
 
 .partyRunList{display:grid; gap:8px; margin-top:10px;}
 .partyRunItem{
@@ -196,6 +209,19 @@ hr{border:0; border-top:1px solid var(--line); margin:14px 0;}
   padding:4px 8px;
   border-radius:999px;
 }
+
+.affPairs{display:grid; gap:8px; margin-top:10px;}
+.affPair{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  background: rgba(0,0,0,.14);
+}
+.affPair .row{
+  display:flex; justify-content:space-between; gap:8px; align-items:center;
+}
+.affVal.pos{color: var(--good); font-weight:800;}
+.affVal.neg{color: var(--bad); font-weight:800;}
 
 .inventory, .skills{display:grid; gap:8px; margin-top:10px;}
 .itemBtn, .skillBtn{
@@ -224,7 +250,7 @@ hr{border:0; border-top:1px solid var(--line); margin:14px 0;}
 
 .inlineControls{margin-top:10px;}
 .inlineLabel{display:flex; gap:10px; align-items:center; color:var(--muted); font-size:13px;}
-.inlineLabel select{max-width:240px;}
+.inlineLabel select{max-width:260px;}
 
 .log{
   margin-top:14px;
@@ -250,7 +276,7 @@ hr{border:0; border-top:1px solid var(--line); margin:14px 0;}
   padding:18px;
 }
 .modalCard{
-  width:min(720px, 100%);
+  width:min(760px, 100%);
   background: linear-gradient(180deg, rgba(255,255,255,.04), transparent 45%), var(--card);
   border: 1px solid var(--line);
   border-radius: 18px;
