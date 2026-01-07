@@ -79,8 +79,8 @@ code{
 
 .brand{ display:flex; align-items:center; }
 .brandLogo{
-  /* 1) 로고 크게 */
-  height: 52px;
+  /* 로고 크게 */
+  height: 104px;
   width: auto;
   display:block;
 }
