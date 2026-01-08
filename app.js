@@ -295,69 +295,107 @@ function renderPartySlots() {
   wrap.innerHTML = "";
 
   const max = 4;
+  const defs = state.data.skills?.definitions ?? {};
+
   for (let i = 0; i < max; i++) {
     const slot = document.createElement("div");
     slot.className = "partySlot";
 
     const m = state.party[i];
+
+    // ✅ 1) 빈 슬롯: + 파티원 추가 버튼만
     if (!m) {
-      const defs = state.data.skills?.definitions ?? {};
-      const allSkillIds = [
-          ...(m.skills?.active ?? []),
-          ...(m.skills?.passive ?? [])
-          ];
-
-        // "직업 스킬 이름: 설명"은 너무 길어질 수 있어서 1~2개만 표시 추천
-      const showSkillIds = allSkillIds.slice(0, 2);
-      const skillLines = showSkillIds
-          .map(id => defs[id])
-          .filter(Boolean)
-          .map(s => `<div class="slotSkillLine"><b>${esc(s.name)}</b>: ${esc(s.description)}</div>`)
-          .join("");
-
-        slot.innerHTML = `
-          <div class="slotCard">
-            <div class="slotLeft">
-              <div class="portraitWrap">
-                <img class="portrait" src="${esc(portraitFor(m.jobId))}" alt="portrait"/>
-              </div>
-
-              <div class="slotInfoText">
-                <div class="slotNameLine">${esc(m.name)} <span class="muted">(${esc(m.jobName)})</span></div>
-                <div class="slotMetaLine">성격 : ${esc((m.traits || []).join(", ") || "없음")}</div>
-                <div class="slotStatLine">HP: ${m.hp}/${m.maxHp}, &nbsp; MP: ${m.mp}/${m.maxMp}</div>
-                ${skillLines || `<div class="slotSkillLine muted">직업 스킬: 없음</div>`}
-              </div>
-            </div>
-
-            <button class="ghost slotDelBtn" data-del="${i}" type="button">삭제</button>
-          </div>
-        `;
-
-      // 카드 클릭 시 편집(삭제 버튼 제외)
-      slot.querySelector(".slotCard")?.addEventListener("click", (e) => {
-        const delBtn = e.target.closest(".slotDelBtn");
-        if (delBtn) return;
-        openSetupModal("edit", i);
-      });
-
-      // 삭제
-      slot.querySelectorAll("[data-del]").forEach(btn => {
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          const idx = Number(btn.dataset.del);
-          const removed = state.party[idx];
-          state.party.splice(idx, 1);
-
-          initPairAffinities();
-          renderPartySlots();
-          logLine(`파티원 제거: ${removed?.name ?? ""}`);
-        };
-      });
+      slot.innerHTML = `
+        <button class="slotAddBtn" type="button" data-add="${i}">
+          <span style="font-size:18px;">＋</span> 파티원 추가
+        </button>
+      `;
+      wrap.appendChild(slot);
+      continue;
     }
+
+    // ✅ 2) 파티원 있음: 카드 렌더
+    const allSkillIds = [
+      ...(m.skills?.active ?? []),
+      ...(m.skills?.passive ?? [])
+    ];
+
+    // 너무 길어지니 2개만 노출 (원하면 숫자 조절 가능)
+    const showSkillDefs = allSkillIds
+      .map(id => defs[id])
+      .filter(Boolean)
+      .slice(0, 2);
+
+    const skillLines = (showSkillDefs.length ? showSkillDefs : [])
+      .map(s => `<div class="slotSkillLine"><b>${esc(s.name)}</b>: ${esc(s.description)}</div>`)
+      .join("") || `<div class="slotSkillLine muted">스킬 없음</div>`;
+
+    slot.innerHTML = `
+      <div class="slotCard" data-edit="${i}">
+        <div class="slotLeft">
+          <!-- 3-1) 이미지 영역 고정 -->
+          <div class="portraitWrap">
+            <img class="portrait" src="${esc(portraitFor(m.jobId))}" alt="portrait" />
+          </div>
+
+          <!-- 3-2) 텍스트 영역(좌측 정렬) -->
+          <div class="slotInfoText">
+            <div class="slotNameLine">
+              ${esc(m.name)} <span class="muted">(${esc(m.jobName)})</span>
+            </div>
+            <div class="slotMetaLine">
+              성격 : ${esc((m.traits ?? []).join(", ") || "없음")}
+            </div>
+            <div class="slotStatLine">
+              HP: ${m.hp}/${m.maxHp},&nbsp;&nbsp;MP: ${m.mp}/${m.maxMp}
+            </div>
+            ${skillLines}
+          </div>
+        </div>
+
+        <!-- 3-3) 삭제 버튼: 우측 중앙 -->
+        <button class="ghost slotDelBtn" type="button" data-del="${i}">삭제</button>
+      </div>
+    `;
 
     wrap.appendChild(slot);
   }
+
+  // ✅ 빈 슬롯: 추가 버튼 → 캐릭터 설정 모달 열기(추가)
+  wrap.querySelectorAll("[data-add]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.add);
+      // "지정 슬롯에 추가"를 원하면 idx를 저장해도 되고,
+      // 지금 구조처럼 "배열 끝에 push"면 idx는 굳이 안써도 됩니다.
+      openSetupModalForAdd(); 
+    });
+  });
+
+  // ✅ 카드 클릭 → 편집 모달 열기
+  wrap.querySelectorAll("[data-edit]").forEach(card => {
+    card.addEventListener("click", (e) => {
+      // 삭제 버튼 클릭이면 편집 열지 않기
+      const delBtn = e.target?.closest?.("[data-del]");
+      if (delBtn) return;
+      const idx = Number(card.dataset.edit);
+      openSetupModalForEdit(idx);
+    });
+  });
+
+  // ✅ 삭제 버튼
+  wrap.querySelectorAll("[data-del]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = Number(btn.dataset.del);
+      const removed = state.party[idx];
+      state.party.splice(idx, 1);
+
+      initPairAffinities();
+      renderPartySlots();
+      logLine(`파티원 제거: ${removed?.name ?? ""}`);
+    });
+  });
+}
 
   // portrait css는 styles.css에 class 추가가 필요할 수 있어(없으면 아래 인라인이 최소 보정)
   // (이미 styles.css 적용했다면 무시해도 OK)
