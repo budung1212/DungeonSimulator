@@ -75,7 +75,7 @@ function findJob(catId, jobId) {
   const cat = state.data.jobs.categories.find(c => c.id === catId);
   return cat?.jobs?.find(j => j.id === jobId) ?? null;
 }
-function getSkillDef(id) { return state.data.skills.definitions[id]; }
+function getSkillDef(id) { return state.data.skills?.definitions?.[id] ?? null; }
 function getItemDef(id) { return state.data.items.definitions[id]; }
 function getStatusDef(id) { return state.data.statuses.definitions[id]; }
 
@@ -397,17 +397,7 @@ function renderPartySlots() {
   });
 }
 
-  // portrait css는 styles.css에 class 추가가 필요할 수 있어(없으면 아래 인라인이 최소 보정)
-  // (이미 styles.css 적용했다면 무시해도 OK)
-  wrap.querySelectorAll(".portrait").forEach(img => {
-    img.style.width = "62px";
-    img.style.height = "62px";
-    img.style.borderRadius = "14px";
-    img.style.objectFit = "cover";
-    img.style.border = "1px solid rgba(203,191,169,.95)";
-    img.style.background = "rgba(255,255,255,.35)";
-  });
-}
+
 
 // ---------- Setup Confirm (add/edit) ----------
 function confirmMemberFromModal() {
@@ -700,7 +690,7 @@ function renderSkills() {
   const wrap = $("#skillsList");
   wrap.innerHTML = "";
 
-  const defs = state.data.skills.definitions;
+  const defs = state.data.skills?.definitions ?? {};
 
   state.party.forEach((m, mi) => {
     for (const sid of (m.skills.active ?? [])) {
