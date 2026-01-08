@@ -1583,9 +1583,8 @@ async function init() {
 
   buildJobUI();
   buildTraitDropdowns();
-
-  // Setup screen
   renderPartySlots();
+  };
 
   // Party clear
   $("#clearPartyBtn").onclick = () => {
