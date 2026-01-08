@@ -1,7 +1,15 @@
 import { state } from "../state.js";
 import { $, clamp, pick, rndInt, chance, logLine } from "../utils.js";
 import { getItemDef, getStatusDef } from "../data.js";
-import { applyToMember, addStatus, hasStatus, addPairAffinity, passiveCheckBonus } from "../party.js";
+import {
+  applyToMember,
+  addStatus,
+  hasStatus,
+  addPairAffinity,
+  passiveCheckBonus,
+  pairKey,
+  getPairAffinity
+} from "../party.js";
 import { startCombatFromEvent, combatRound, livingParty } from "./combat.js";
 import { renderAll } from "../ui/renderRun.js";
 
@@ -9,8 +17,81 @@ export function currentEvent() {
   return state.scenario.events[state.eventIndex];
 }
 
+/* =========================
+   성격(TRAIT) 룰 - 완전 복원
+   ========================= */
+
+/** traits.rules.keywords.conflicts 기반: 두 trait가 충돌 관계인지 */
+function traitConflict(a, b) {
+  const pairs = state.data.traits?.rules?.keywords?.conflicts ?? [];
+  return pairs.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+}
+
+/**
+ * 이벤트의 traitBias(preferred/conflict)가 있을 때,
+ * 플레이어 traits와의 적합도를 점수화
+ * - preferred에 포함되면 +match, 아니면 +partial
+ * - conflict에 포함되면 +conflict(음수인 경우가 일반적)
+ * - 플레이어 traits 내부에 상호 충돌이 있으면 추가 페널티(-2씩)
+ */
+function computeTraitAffinity(playerTraits, bias) {
+  const rules = state.data.traits?.rules?.affinity ?? { match: 8, partial: 2, conflict: -6 };
+  const preferred = bias?.preferred ?? [];
+  const conflict = bias?.conflict ?? [];
+  let delta = 0;
+
+  for (const t of preferred) {
+    delta += playerTraits.includes(t) ? rules.match : rules.partial;
+  }
+  for (const t of conflict) {
+    if (playerTraits.includes(t)) delta += rules.conflict;
+  }
+
+  // 플레이어 내부 모순 성격 페널티
+  for (let i = 0; i < playerTraits.length; i++) {
+    for (let j = i + 1; j < playerTraits.length; j++) {
+      if (traitConflict(playerTraits[i], playerTraits[j])) delta -= 2;
+    }
+  }
+
+  return delta;
+}
+
+/**
+ * 파티원 A의 trait와 파티원 B의 trait 조합으로 호감도 변화
+ * - keywords.match / partial / conflicts 페어가 있으면 rules.affinity에 맞춰 가산
+ */
+function traitInteractionDelta(aTraits, bTraits) {
+  const aff = state.data.traits?.rules?.affinity ?? { match: 8, partial: 2, conflict: -6 };
+  const kw = state.data.traits?.rules?.keywords ?? {};
+  const matchPairs = kw.match ?? [];
+  const partialPairs = kw.partial ?? [];
+  const conflictPairs = kw.conflicts ?? [];
+
+  const hasPair = (pairs, x, y) =>
+    pairs.some(([p, q]) => (p === x && q === y) || (p === y && q === x));
+
+  let delta = 0;
+  for (const x of (aTraits ?? [])) {
+    for (const y of (bTraits ?? [])) {
+      if (hasPair(matchPairs, x, y)) delta += aff.match;
+      else if (hasPair(partialPairs, x, y)) delta += aff.partial;
+      else if (hasPair(conflictPairs, x, y)) delta += aff.conflict;
+    }
+  }
+
+  return delta;
+}
+
+/** 이벤트가 traitBias를 갖고 있으면 해당 보정값 계산 */
+function eventBiasDelta(actorTraits, traitBias) {
+  if (!traitBias) return 0;
+  return computeTraitAffinity(actorTraits ?? [], traitBias);
+}
+
 /* 이벤트 추천 행동자 */
 export function recommendActorIndex(event) {
+  // 전투는 전투 스탯 위주
   if (event.type === "combat") {
     let best = 0;
     let bestScore = -1e9;
@@ -26,15 +107,19 @@ export function recommendActorIndex(event) {
     return best;
   }
 
+  // 이벤트는 체크 stat + 패시브 + luck + traitBias 반영
   const dcStat = event?.choices?.[0]?.check?.stat;
   let best = 0;
   let bestScore = -1e9;
 
   state.party.forEach((m, i) => {
     if (m.hp <= 0) return;
+
     const base = (dcStat ? (m.stats[dcStat] ?? 0) : 0);
     const bonus = passiveCheckBonus(m, event, dcStat);
-    const score = base * 2 + bonus * 1.5 + (m.stats.luck ?? 0) * 0.5;
+    const trait = computeTraitAffinity(m.traits ?? [], event.traitBias);
+    const score = base * 2 + bonus * 1.5 + (m.stats.luck ?? 0) * 0.5 + trait * 0.2;
+
     if (score > bestScore) { bestScore = score; best = i; }
   });
 
@@ -55,6 +140,7 @@ function setEventUI(ev) {
 export function tryStealthSkipCombat() {
   const candidates = state.party.filter(m => m.hp > 0 && (m.skills?.passive ?? []).includes("stealth"));
   if (candidates.length === 0) return { ok: false, reason: "은신술 보유자가 없다." };
+
   const best = candidates.reduce((a, b) => (a.stats.luck ?? 0) >= (b.stats.luck ?? 0) ? a : b);
   const pct = best.stats.luck ?? 0;
   const ok = chance(pct);
@@ -87,10 +173,16 @@ function resolveChoice(ev, ch) {
   applyToMember(actor, out.effects ?? {});
   if (out.effects?.gold) logLine(`GOLD ${out.effects.gold >= 0 ? "+" : ""}${out.effects.gold}`);
 
-  // 단순 호감도: 이벤트마다 행동자가 나머지와 +1(원하면 다시 trait 시스템 넣어줄 수 있음)
+  // ✅ 여기서 성격 룰로 호감도 계산(복원)
+  const biasDelta = eventBiasDelta(actor.traits, ev.traitBias);
+
   state.party.forEach(m => {
     if (m.id === actor.id) return;
-    addPairAffinity(actor.id, m.id, ok ? 1 : -1);
+
+    const pairDelta = biasDelta + traitInteractionDelta(actor.traits, m.traits);
+    addPairAffinity(actor.id, m.id, pairDelta);
+
+    logLine(`성격 상호작용: ${actor.name} ↔ ${m.name} 호감도 ${pairDelta >= 0 ? "+" : ""}${pairDelta}`);
   });
 
   postEventAffinityTick();
@@ -110,13 +202,13 @@ function postEventAffinityTick() {
   for (let i = 0; i < state.party.length; i++) {
     for (let j = i + 1; j < state.party.length; j++) {
       const a = state.party[i], b = state.party[j];
-      const key = (a.id < b.id) ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
-      const val = state.pairAffinity[key] ?? 0;
+      const val = getPairAffinity(a.id, b.id);
 
       if (val >= cfg.positive.min) {
         if (Math.random() < (cfg.positive.chancePerPair ?? 0)) {
           const hp = rndInt(1, 3);
           const mp = rndInt(1, 3);
+
           a.hp = clamp(a.hp + hp, 0, a.maxHp);
           b.hp = clamp(b.hp + hp, 0, b.maxHp);
           a.mp = clamp(a.mp + mp, 0, a.maxMp);
@@ -129,6 +221,7 @@ function postEventAffinityTick() {
         if (Math.random() < (cfg.negative.chancePerPair ?? 0)) {
           const hp = rndInt(1, 3);
           const mp = rndInt(1, 3);
+
           a.hp = clamp(a.hp - hp, 0, a.maxHp);
           b.hp = clamp(b.hp - hp, 0, b.maxHp);
           a.mp = clamp(a.mp - mp, 0, a.maxMp);
@@ -148,6 +241,7 @@ export function renderCombatChoices() {
 
   const mons = (state.combat?.monsters ?? []).filter(m => m.hp > 0);
   const monText = mons.map(m => `${m.name}(${m.hp}/${m.maxHp})`).join(" · ") || "없음";
+
   const info = document.createElement("div");
   info.className = "muted small";
   info.textContent = `적 상태: ${monText}`;
@@ -163,8 +257,11 @@ export function renderCombatChoices() {
   flee.className = "choiceBtn";
   flee.textContent = "도주 시도(성공 확률: 파티 평균 luck%)";
   flee.onclick = () => {
-    const avgLuck = Math.round(state.party.reduce((a, m) => a + (m.stats.luck ?? 0), 0) / Math.max(1, state.party.length));
+    const avgLuck = Math.round(
+      state.party.reduce((a, m) => a + (m.stats.luck ?? 0), 0) / Math.max(1, state.party.length)
+    );
     const ok = chance(avgLuck);
+
     if (ok) {
       logLine(`도주 성공! (확률 ${avgLuck}%)`);
       state.combat = null;
@@ -172,7 +269,6 @@ export function renderCombatChoices() {
       goNextEvent();
     } else {
       logLine(`도주 실패… (확률 ${avgLuck}%)`);
-      // 실패하면 적이 한 번 더 때림은 combat.js 쪽에서 자연스럽게 처리하고 싶으면 확장 가능
       renderAll();
       renderCombatChoices();
     }
@@ -224,7 +320,6 @@ export function renderEvent() {
       renderCombatChoices();
     };
     $("#choices").appendChild(startBtn);
-
     return;
   }
 
@@ -236,12 +331,14 @@ export function renderEvent() {
     btn.onclick = () => {
       const hp = ev.rest?.hp ?? 0;
       const mp = ev.rest?.mp ?? 0;
+
       state.party.forEach(m => {
         if (m.hp > 0) {
           m.hp = clamp(m.hp + hp, 0, m.maxHp);
           m.mp = clamp(m.mp + mp, 0, m.maxMp);
         }
       });
+
       logLine(`휴식 효과: 파티 HP +${hp}, MP +${mp}`);
       postEventAffinityTick();
       renderAll();
@@ -254,6 +351,7 @@ export function renderEvent() {
   if (ev.type === "shop") {
     $("#choices").innerHTML = "";
     const offers = ev.shop?.offers ?? [];
+
     offers.forEach(off => {
       const def = getItemDef(off.itemId);
       const btn = document.createElement("button");
