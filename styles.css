@@ -1,4 +1,3 @@
-
 :root{
   --bg:#f4efe6;
   --panel:#fbf7ef;
@@ -35,26 +34,36 @@ body{
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px 18px;
+
+  /* ✅ 제목 + 액션 영역을 수직 스택으로 */
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
 }
 .brand{
   display:flex;
   align-items:center;
 }
 .logoImg{
-  width: 520px; /* 로고 2배 느낌 */
+  width: 520px;
   max-width: 100%;
   height: auto;
   display:block;
 }
 
-/* 우상단 고정 Save/Load */
+/* ✅ Save/Load: 헤더 내부, 우측 정렬 */
+.headerActions{
+  display:flex;
+  justify-content:flex-end;
+}
+
 .saveDock{
-  position: fixed;
-  right: 18px;
-  top: 16px;
-  z-index: 40;
   display:flex;
   gap:10px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(122,101,69,.28);
+  background: rgba(255,255,255,.18);
 }
 
 .card{
@@ -79,9 +88,7 @@ body{
   gap:10px;
 }
 
-button{
-  font: inherit;
-}
+button{ font: inherit; }
 button.primary{
   background: var(--accent);
   color: #fff;
@@ -99,9 +106,7 @@ button.ghost{
   padding: 10px 14px;
   cursor:pointer;
 }
-button.ghost:hover{
-  background: rgba(255,255,255,.45);
-}
+button.ghost:hover{ background: rgba(255,255,255,.45); }
 button.secondary{
   background: rgba(122,101,69,.10);
   border: 1px solid rgba(122,101,69,.35);
@@ -167,11 +172,10 @@ button.secondary{
 @media (max-width: 740px){
   .partyGrid{ grid-template-columns: 1fr; }
   .logoImg{ width: 380px; }
+  .saveDock{ flex-wrap: wrap; justify-content:flex-end; }
 }
 
-.partySlot{
-  min-height: 120px;
-}
+.partySlot{ min-height: 120px; }
 
 .slotAddBtn{
   width:100%;
@@ -187,9 +191,7 @@ button.secondary{
   gap:10px;
   cursor:pointer;
 }
-.slotAddBtn:hover{
-  background: rgba(122,101,69,.10);
-}
+.slotAddBtn:hover{ background: rgba(122,101,69,.10); }
 
 .slotCard{
   width:100%;
@@ -204,9 +206,7 @@ button.secondary{
   gap: 12px;
   cursor: pointer;
 }
-.slotCard:hover{
-  background: rgba(255,255,255,.28);
-}
+.slotCard:hover{ background: rgba(255,255,255,.28); }
 
 .slotLeft{
   display:flex;
@@ -240,20 +240,13 @@ button.secondary{
   flex: 1;
   min-width: 0;
 }
-.slotNameLine{
-  font-weight: 900;
-  font-size: 15px;
-}
+.slotNameLine{ font-weight: 900; font-size: 15px; }
 .slotMetaLine, .slotStatLine, .slotSkillLine{
   font-size: 12px;
   color: rgba(60,52,42,.92);
 }
 .slotSkillLine b{ font-weight: 900; }
-
-.slotDelBtn{
-  align-self:center;
-  cursor:pointer;
-}
+.slotDelBtn{ align-self:center; cursor:pointer; }
 
 .enterRow{
   margin-top: 14px;
@@ -266,7 +259,7 @@ button.secondary{
   font-weight: 900;
 }
 
-/* RUN UI (기존) */
+/* RUN UI */
 .layout{
   display:grid;
   grid-template-columns: 420px 1fr;
@@ -405,10 +398,7 @@ input:focus, select:focus{
   border-color: rgba(108,90,61,.55);
   box-shadow: 0 0 0 3px rgba(108,90,61,.12);
 }
-.actionsRow{
-  display:flex;
-  gap:10px;
-}
+.actionsRow{ display:flex; gap:10px; }
 .actionsRow.right{ justify-content:flex-end; }
 
 .footer{
