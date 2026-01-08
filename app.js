@@ -1,4 +1,3 @@
-// app.js
 const $ = (sel) => document.querySelector(sel);
 
 const SAVE_KEY = "dungeon_party_sim_save_v1";
@@ -18,11 +17,6 @@ const state = {
 
 /**
  * Portrait asset resolver
- * - 여기에 jobId -> 이미지 경로를 마음대로 추가해두면,
- *   파티 슬롯/런 화면에서 자동으로 직업별 프로필이 뜹니다.
- * - 파일 예시:
- *   /assets/portraits/default.png
- *   /assets/portraits/shield_knight.png
  */
 const PORTRAITS = {
   default: "./assets/portraits/default.png",
@@ -174,12 +168,8 @@ function openSetupModal(mode, index = null) {
 
   state.setupEditingIndex = (mode === "edit") ? index : null;
 
-  // 초기값 세팅
-  if (mode === "new") {
-    resetMemberForm();
-  } else if (mode === "edit") {
-    loadMemberToForm(index);
-  }
+  if (mode === "new") resetMemberForm();
+  else if (mode === "edit") loadMemberToForm(index);
 
   modal.classList.remove("hidden");
 }
@@ -194,7 +184,6 @@ function closeSetupModal() {
 function resetMemberForm() {
   if ($("#nameInput")) $("#nameInput").value = "";
   if ($("#categorySelect")) {
-    // 첫 카테고리 선택으로 복귀
     const catSel = $("#categorySelect");
     if (catSel.options.length) catSel.selectedIndex = 0;
     catSel.dispatchEvent(new Event("change"));
@@ -282,11 +271,11 @@ function avgAffinityFor(memberId) {
 }
 
 /**
- * ✅ Setup 화면 파티 슬롯 렌더
+ * ✅ Setup 화면 파티 슬롯 렌더 (고쳐진 버전)
  * - 항상 4칸
- * - 비어있으면 "+ 파티원 추가" 버튼
+ * - 비어있으면 "+ 파티원 추가" 버튼 (누르면 생성 모달)
  * - 있으면 캐릭터 카드 + 삭제 버튼
- * - 카드 클릭하면 편집 모달 열림
+ * - 카드 클릭하면 편집 모달 (삭제 버튼 누르면 삭제)
  */
 function renderPartySlots() {
   const wrap = $("#partyPreview");
@@ -295,80 +284,77 @@ function renderPartySlots() {
   wrap.innerHTML = "";
 
   const max = 4;
+  const defs = state.data.skills?.definitions ?? {};
+
   for (let i = 0; i < max; i++) {
     const slot = document.createElement("div");
     slot.className = "partySlot";
 
     const m = state.party[i];
+
+    // ✅ 빈 슬롯: 파티원 추가 버튼
     if (!m) {
-      const defs = state.data.skills?.definitions ?? {};
-      const allSkillIds = [
-          ...(m.skills?.active ?? []),
-          ...(m.skills?.passive ?? [])
-          ];
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "slotAddBtn";
+      btn.innerHTML = `+ 파티원 추가`;
+      btn.onclick = () => openSetupModal("new");
+      slot.appendChild(btn);
 
-        // "직업 스킬 이름: 설명"은 너무 길어질 수 있어서 1~2개만 표시 추천
-      const showSkillIds = allSkillIds.slice(0, 2);
-      const skillLines = showSkillIds
-          .map(id => defs[id])
-          .filter(Boolean)
-          .map(s => `<div class="slotSkillLine"><b>${esc(s.name)}</b>: ${esc(s.description)}</div>`)
-          .join("");
-
-        slot.innerHTML = `
-          <div class="slotCard">
-            <div class="slotLeft">
-              <div class="portraitWrap">
-                <img class="portrait" src="${esc(portraitFor(m.jobId))}" alt="portrait"/>
-              </div>
-
-              <div class="slotInfoText">
-                <div class="slotNameLine">${esc(m.name)} <span class="muted">(${esc(m.jobName)})</span></div>
-                <div class="slotMetaLine">성격 : ${esc((m.traits || []).join(", ") || "없음")}</div>
-                <div class="slotStatLine">HP: ${m.hp}/${m.maxHp}, &nbsp; MP: ${m.mp}/${m.maxMp}</div>
-                ${skillLines || `<div class="slotSkillLine muted">직업 스킬: 없음</div>`}
-              </div>
-            </div>
-
-            <button class="ghost slotDelBtn" data-del="${i}" type="button">삭제</button>
-          </div>
-        `;
-
-      // 카드 클릭 시 편집(삭제 버튼 제외)
-      slot.querySelector(".slotCard")?.addEventListener("click", (e) => {
-        const delBtn = e.target.closest(".slotDelBtn");
-        if (delBtn) return;
-        openSetupModal("edit", i);
-      });
-
-      // 삭제
-      slot.querySelectorAll("[data-del]").forEach(btn => {
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          const idx = Number(btn.dataset.del);
-          const removed = state.party[idx];
-          state.party.splice(idx, 1);
-
-          initPairAffinities();
-          renderPartySlots();
-          logLine(`파티원 제거: ${removed?.name ?? ""}`);
-        };
-      });
+      wrap.appendChild(slot);
+      continue;
     }
+
+    // ✅ 채워진 슬롯: 캐릭터 카드
+    const allSkillIds = [
+      ...(m.skills?.active ?? []),
+      ...(m.skills?.passive ?? [])
+    ];
+
+    const showSkillIds = allSkillIds.slice(0, 2);
+    const skillLines = showSkillIds
+      .map(id => defs[id])
+      .filter(Boolean)
+      .map(s => `<div class="slotSkillLine"><b>${esc(s.name)}</b>: ${esc(s.description)}</div>`)
+      .join("");
+
+    slot.innerHTML = `
+      <div class="slotCard" data-edit="${i}">
+        <div class="slotLeft">
+          <div class="portraitWrap">
+            <img class="portrait" src="${esc(portraitFor(m.jobId))}" alt="portrait"/>
+          </div>
+
+          <div class="slotInfoText">
+            <div class="slotNameLine">${esc(m.name)} <span class="muted">(${esc(m.jobName)})</span></div>
+            <div class="slotMetaLine">성격 : ${esc((m.traits || []).join(", ") || "없음")}</div>
+            <div class="slotStatLine">HP: ${m.hp}/${m.maxHp}, &nbsp; MP: ${m.mp}/${m.maxMp}</div>
+            ${skillLines || `<div class="slotSkillLine muted">직업 스킬: 없음</div>`}
+          </div>
+        </div>
+
+        <button class="ghost slotDelBtn" data-del="${i}" type="button">삭제</button>
+      </div>
+    `;
+
+    // 카드 클릭 = 편집 (삭제 버튼 제외)
+    slot.querySelector(`[data-edit="${i}"]`)?.addEventListener("click", (e) => {
+      if (e.target.closest(".slotDelBtn")) return;
+      openSetupModal("edit", i);
+    });
+
+    // 삭제
+    slot.querySelector(`[data-del="${i}"]`)?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const removed = state.party[i];
+      state.party.splice(i, 1);
+      initPairAffinities();
+      renderPartySlots();
+      logLine(`파티원 제거: ${removed?.name ?? ""}`);
+    });
 
     wrap.appendChild(slot);
   }
-
-  // portrait css는 styles.css에 class 추가가 필요할 수 있어(없으면 아래 인라인이 최소 보정)
-  // (이미 styles.css 적용했다면 무시해도 OK)
-  wrap.querySelectorAll(".portrait").forEach(img => {
-    img.style.width = "62px";
-    img.style.height = "62px";
-    img.style.borderRadius = "14px";
-    img.style.objectFit = "cover";
-    img.style.border = "1px solid rgba(203,191,169,.95)";
-    img.style.background = "rgba(255,255,255,.35)";
-  });
 }
 
 // ---------- Setup Confirm (add/edit) ----------
@@ -390,7 +376,7 @@ function confirmMemberFromModal() {
       const old = state.party[editing];
       const member = createMemberFromForm(old?.id ?? null);
 
-      // 편집 시: hp/mp/status 유지(원하면 초기화 가능)
+      // 편집 시: hp/mp/status 유지
       if (old) {
         member.hp = old.hp;
         member.mp = old.mp;
@@ -416,7 +402,6 @@ function confirmMemberFromModal() {
 // ---------- Status handling ----------
 function hasStatus(m, sid) { return (m.statuses ?? []).includes(sid); }
 function addStatus(m, sid) {
-  // 도끼 투사 패시브: 상태이상 무시
   if (hasPassive(m, "ignore_status")) return;
   if (!m.statuses.includes(sid)) m.statuses.push(sid);
 }
@@ -457,7 +442,6 @@ function computeTraitAffinity(playerTraits, bias) {
     if (playerTraits.includes(t)) delta += rules.conflict;
   }
 
-  // 내부 상극 패널티
   for (let i = 0; i < playerTraits.length; i++) {
     for (let j = i + 1; j < playerTraits.length; j++) {
       if (traitConflict(playerTraits[i], playerTraits[j])) delta -= 2;
@@ -466,7 +450,6 @@ function computeTraitAffinity(playerTraits, bias) {
   return delta;
 }
 
-// 기존 코드에서 쓰던 함수들(호감도 계산) — 유지
 function traitInteractionDelta(aTraits, bTraits) {
   const aff = state.data.traits?.rules?.affinity ?? { match: 8, partial: 2, conflict: -6 };
   const kw = state.data.traits?.rules?.keywords ?? {};
@@ -496,7 +479,6 @@ function eventBiasDelta(actorTraits, traitBias) {
 function passiveCheckBonus(member, event, stat) {
   let bonus = 0;
 
-  // dungeon_expert puzzle_master: +luck on checks for puzzle tags
   if (hasPassive(member, "puzzle_master")) {
     const cond = getSkillDef("puzzle_master")?.condition?.eventTagsAny ?? [];
     const ok = cond.some(t => (event.tags ?? []).includes(t));
@@ -591,7 +573,6 @@ function renderPartyRunList() {
     wrap.appendChild(div);
   });
 
-  // actor select
   const actorSel = $("#actorSelect");
   actorSel.innerHTML = "";
   state.party.forEach((m, i) => {
@@ -599,16 +580,6 @@ function renderPartyRunList() {
     opt.value = String(i);
     opt.textContent = `${m.name} (${m.jobName})`;
     actorSel.appendChild(opt);
-  });
-
-  // portrait 보정
-  wrap.querySelectorAll(".portrait").forEach(img => {
-    img.style.width = "44px";
-    img.style.height = "44px";
-    img.style.borderRadius = "12px";
-    img.style.objectFit = "cover";
-    img.style.border = "1px solid rgba(203,191,169,.95)";
-    img.style.background = "rgba(255,255,255,.35)";
   });
 }
 
@@ -820,7 +791,6 @@ function useItem(itemId, targetIndex) {
 
   logLine(`아이템 사용: ${item.name} → ${target.name}`);
 
-  // block if has status (HP potion addiction)
   if (item.extra?.blockIfHasStatus && hasStatus(target, item.extra.blockIfHasStatus)) {
     logLine(`${target.name}은(는) '${getStatusDef(item.extra.blockIfHasStatus)?.name ?? item.extra.blockIfHasStatus}' 상태로 포션 회복이 불가능하다.`);
   } else {
@@ -829,7 +799,6 @@ function useItem(itemId, targetIndex) {
     if (item.effects?.mp) logLine(`${target.name} MP +${item.effects.mp}`);
   }
 
-  // chance status
   if (item.extra?.applyStatus && (item.extra?.chance ?? 0) > 0) {
     if (Math.random() < item.extra.chance) {
       addStatus(target, item.extra.applyStatus);
@@ -860,23 +829,19 @@ function applyTemp(member, tempObj) {
 function physicalDamage(attacker, defender, raw) {
   let dmg = raw;
 
-  // luck crit
   if (chance(attacker.stats?.luck ?? 0)) {
     dmg = Math.floor(dmg * 2);
     logLine(`치명타! (${attacker.name})`);
   }
 
-  // defender evade
   if (chance(defender.stats?.luck ?? defender.luck ?? 0)) {
     logLine(`회피! ${defender.name}이(가) 공격을 피했다.`);
     return 0;
   }
 
-  // def blocks 0.5*def
   const reduced = Math.floor((defender.stats?.def ?? defender.def ?? 0) * 0.5);
   dmg = Math.max(0, dmg - reduced);
 
-  // damageHalf temp
   if (defender.temp?.damageHalf) {
     dmg = Math.floor(dmg / 2);
     defender.temp.damageHalf = Math.max(0, defender.temp.damageHalf - 1);
@@ -996,26 +961,18 @@ function useSkill(skillId, casterIndex, targetIndex, enemyIndex = null) {
   if (state.combat?.inCombat) renderCombatChoices();
 }
 
-// ---------- Combat ----------
+// ---------- Combat / Event / SaveLoad / Init ----------
+// 아래는 기존 로직 그대로 유지 (렌더/세이브/전투 흐름 변경 없음)
+
 function startCombatFromEvent(ev) {
-  const monsters = (ev.combat?.monsters ?? []).map(m => ({
-    ...m,
-    maxHp: m.hp
-  }));
-
-  state.combat = {
-    inCombat: true,
-    monsters,
-    reward: ev.combat?.reward ?? { gold: 0, items: [] }
-  };
-
+  const monsters = (ev.combat?.monsters ?? []).map(m => ({ ...m, maxHp: m.hp }));
+  state.combat = { inCombat: true, monsters, reward: ev.combat?.reward ?? { gold: 0, items: [] } };
   logLine(`전투 시작: ${ev.title}`);
 }
 
 function tryStealthSkipCombat() {
   const candidates = state.party.filter(m => m.hp > 0 && hasPassive(m, "stealth"));
   if (candidates.length === 0) return { ok: false, reason: "은신술 보유자가 없다." };
-
   const best = candidates.reduce((a, b) => (a.stats.luck ?? 0) >= (b.stats.luck ?? 0) ? a : b);
   const pct = best.stats.luck ?? 0;
   const ok = chance(pct);
@@ -1151,7 +1108,6 @@ function endCombatWin() {
   renderEventChoicesAfterCombat();
 }
 
-// ---------- Event flow ----------
 function currentEvent() {
   return state.scenario.events[state.eventIndex];
 }
