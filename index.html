@@ -10,16 +10,15 @@
 
   <!-- 우상단 고정 Save/Load -->
   <div class="saveDock">
-    <button class="ghost" id="saveBtn">세이브</button>
-    <button class="ghost" id="loadBtn">로드</button>
-    <button class="ghost" id="wipeSaveBtn">세이브 삭제</button>
+    <button class="ghost" id="saveBtn" type="button">세이브</button>
+    <button class="ghost" id="loadBtn" type="button">로드</button>
+    <button class="ghost" id="wipeSaveBtn" type="button">세이브 삭제</button>
   </div>
 
   <header class="header">
     <div class="headerInner">
-      <!-- 로고: 2배 크게 -->
       <div class="brand">
-        <!-- 로고 파일 경로는 네 프로젝트에 맞게 바꿔도 됨 -->
+        <!-- 로고 파일 경로: ./assets/logo.png (원하면 변경) -->
         <img class="logoImg" src="./assets/logo.png" alt="Dungeon Simulator" />
       </div>
     </div>
@@ -31,7 +30,6 @@
       <!-- 인트로(양피지) -->
       <section class="introCard">
         <div class="parchment">
-          <!-- 양피지 이미지 경로 -->
           <img class="parchmentImg" src="./assets/parchment.png" alt="parchment" />
           <div class="parchmentText">
             던전, 그 기묘한 공간에는<br/>
@@ -47,16 +45,14 @@
             <h2>파티 창</h2>
             <p class="muted small">최대 4명 · 빈 슬롯은 “+ 파티원 추가”</p>
           </div>
-          <button class="ghost" id="clearPartyBtn">파티 초기화</button>
+          <button class="ghost" id="clearPartyBtn" type="button">파티 초기화</button>
         </div>
 
-        <!-- 4슬롯 렌더 영역 -->
         <div class="partyGrid" id="partyPreview"></div>
       </section>
 
-      <!-- 하단 던전 진입 버튼(박스 없이 버튼만) -->
       <div class="enterRow">
-        <button class="primary bigEnter" id="startBtn">던전 진입</button>
+        <button class="primary bigEnter" id="startBtn" type="button">던전 진입</button>
       </div>
     </section>
 
@@ -68,12 +64,11 @@
           <p class="muted" id="scenarioDesc"></p>
         </div>
         <div style="display:flex; gap:10px;">
-          <button id="resetBtn" class="ghost">리셋</button>
+          <button id="resetBtn" class="ghost" type="button">리셋</button>
         </div>
       </div>
 
       <div class="layout">
-        <!-- LEFT -->
         <div class="leftPane">
           <div class="status" id="statusBar"></div>
 
@@ -110,7 +105,6 @@
           </div>
         </div>
 
-        <!-- RIGHT -->
         <div class="rightPane">
           <div class="rowBetween">
             <div>
@@ -129,26 +123,25 @@
           </div>
 
           <div class="choices" id="choices"></div>
-
           <div class="log" id="log"></div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- 기존 대상선택 모달 -->
+  <!-- 대상 선택 모달(아이템/스킬) -->
   <div class="modal hidden" id="modal">
     <div class="modalCard">
       <div class="rowBetween">
         <h3 id="modalTitle">대상 선택</h3>
-        <button class="ghost" id="modalClose">닫기</button>
+        <button class="ghost" id="modalClose" type="button">닫기</button>
       </div>
       <p class="muted" id="modalDesc"></p>
       <div id="modalBody" class="modalBody"></div>
     </div>
   </div>
 
-  <!-- 캐릭터 설정 모달(너가 이미 쓰는 구조/ID 유지하는 전제) -->
+  <!-- 캐릭터 설정 모달 -->
   <div class="modal hidden" id="setupModal">
     <div class="modalCard modalWide">
       <div class="rowBetween">
@@ -156,11 +149,10 @@
           <h3>캐릭터 설정</h3>
           <p class="muted small">이름 · 계열 · 직업 · 성격 키워드 3개</p>
         </div>
-        <button class="ghost" id="setupCloseBtn">닫기</button>
+        <button class="ghost" id="setupCloseBtn" type="button">닫기</button>
       </div>
 
       <div class="setupForm">
-        <!-- 1줄: 이름 -->
         <div class="grid oneCol">
           <label>
             이름
@@ -168,8 +160,7 @@
           </label>
         </div>
 
-        <!-- 2줄: 계열 + 직업 -->
-        <div class="grid twoCol">
+        <div class="grid twoCol" style="margin-top:10px;">
           <label>
             계열
             <select id="categorySelect"></select>
@@ -180,22 +171,22 @@
           </label>
         </div>
 
-        <!-- 3줄: 성격키워드 -->
-        <div class="traits">
+        <div class="traits" style="margin-top:12px;">
           <div class="rowBetween">
             <h3>성격 키워드 3개</h3>
             <span class="hint">중복 선택 불가 (자동 갱신)</span>
           </div>
-          <div class="grid threeCol">
+
+          <div class="grid threeCol" style="margin-top:10px;">
             <label>키워드 1 <select id="traitSel1"></select></label>
             <label>키워드 2 <select id="traitSel2"></select></label>
             <label>키워드 3 <select id="traitSel3"></select></label>
           </div>
         </div>
 
-        <div class="actionsRow right">
-          <button class="ghost" id="setupCancelBtn">취소</button>
-          <button class="primary" id="addMemberBtn">확인</button>
+        <div class="actionsRow right" style="margin-top:14px;">
+          <button class="ghost" id="setupCancelBtn" type="button">취소</button>
+          <button class="primary" id="addMemberBtn" type="button">확인</button>
         </div>
       </div>
     </div>
