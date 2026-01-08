@@ -1,0 +1,8 @@
+Place your images here:
+- ./assets/logo.png
+- ./assets/parchment.png
+Portraits:
+- ./assets/portraits/default.png
+- ./assets/portraits/<jobId>.png (optional)
+
+You can also map jobId -> portrait path in data/jobs.json under "portraits".
